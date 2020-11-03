@@ -14,11 +14,23 @@ FetchContent_Declare(nlohmann_json
     GIT_TAG v3.9.1
     GIT_SHALLOW true
 )
+FetchContent_Declare(
+    cpr
+    GIT_REPOSITORY https://github.com/whoshuu/cpr
+    GIT_TAG 1.5.2
+    GIT_SHALLOW true
+)
+
+set(BUILD_CPR_TESTS OFF)
+set(BUILD_CPR_TESTS_SSL OFF)
+set(USE_SYSTEM_CURL ON)
 
 message("Fetching 'CLI11'")
 FetchContent_MakeAvailable(CLI11)
 message("Fetching 'nlohmann_json'")
 FetchContent_MakeAvailable(nlohmann_json)
+message("Fetching 'cpr'")
+FetchContent_MakeAvailable(cpr)
 
 # Print a warning if user did not set the Release mode
 if (NOT CMAKE_BUILD_TYPE STREQUAL Release)
@@ -43,7 +55,7 @@ list(TRANSFORM SOURCES PREPEND "src/")
 
 # Executable
 add_executable(dolphin ${SOURCES})
-target_link_libraries(dolphin PRIVATE CLI11 nlohmann_json::nlohmann_json)
+target_link_libraries(dolphin PRIVATE CLI11 nlohmann_json::nlohmann_json cpr::cpr)
 
 # Set C++ macro for bench to locate files
 target_compile_definitions(dolphin PRIVATE CMAKE_CURRENT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
