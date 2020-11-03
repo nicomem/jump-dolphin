@@ -20,6 +20,12 @@ FetchContent_Declare(
     GIT_TAG 1.5.2
     GIT_SHALLOW true
 )
+FetchContent_Declare(
+    fmt
+    GIT_REPOSITORY https://github.com/fmtlib/fmt
+    GIT_TAG 7.1.1
+    GIT_SHALLOW true
+)
 
 set(BUILD_CPR_TESTS OFF)
 set(BUILD_CPR_TESTS_SSL OFF)
@@ -31,6 +37,8 @@ message("Fetching 'nlohmann_json'")
 FetchContent_MakeAvailable(nlohmann_json)
 message("Fetching 'cpr'")
 FetchContent_MakeAvailable(cpr)
+message("Fetching 'fmt'")
+FetchContent_MakeAvailable(fmt)
 
 # Print a warning if user did not set the Release mode
 if (NOT CMAKE_BUILD_TYPE STREQUAL Release)
@@ -48,14 +56,17 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wpedantic")
 
 # Source files
 set(SOURCES
-    # Relative to src/
     main.cpp
+
+    jump/client.hpp
+    jump/client.cpp
+    jump/types.hpp
 )
 list(TRANSFORM SOURCES PREPEND "src/")
 
 # Executable
 add_executable(dolphin ${SOURCES})
-target_link_libraries(dolphin PRIVATE CLI11 nlohmann_json::nlohmann_json cpr::cpr)
+target_link_libraries(dolphin PRIVATE CLI11 nlohmann_json::nlohmann_json cpr::cpr fmt::fmt)
 
 # Set C++ macro for bench to locate files
 target_compile_definitions(dolphin PRIVATE CMAKE_CURRENT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")

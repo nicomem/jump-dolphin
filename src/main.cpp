@@ -1,10 +1,18 @@
 #include <iostream>
 
 #include <CLI/CLI.hpp>
-#include <cpr/cpr.h>
-#include <nlohmann/json.hpp>
+
+#include "jump/client.hpp"
 
 // for convenience
 using json = nlohmann::json;
 
-int main() { std::cout << "Hello, World!\n"; }
+int main(int argc, char *argv[]) {
+  char *arg1 = argv[1];
+  char *arg2 = argv[2];
+
+  auto client = JumpClient(arg1, arg2);
+  auto ratios = client.get_ratios();
+  json j = ratios;
+  std::cout << j << std::endl;
+}
