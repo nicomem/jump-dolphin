@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include <CLI/CLI.hpp>
+#include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 
 // for convenience
