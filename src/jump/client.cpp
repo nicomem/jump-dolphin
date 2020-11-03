@@ -1,12 +1,13 @@
 #include "client.hpp"
 
+#include <tuple>
 #include <vector>
 
 using ParamOptKV =
     std::tuple<JumpClient::ParameterName, JumpClient::OptionalParameter>;
 
-cpr::Parameters
-JumpClient::build_parameters(std::initializer_list<ParamOptKV> &&opt_params) {
+static cpr::Parameters
+build_parameters(std::initializer_list<ParamOptKV> &&opt_params) {
   auto holder = cpr::CurlHolder();
   auto params = cpr::Parameters();
 
@@ -49,8 +50,10 @@ JumpClient::get_assets(JumpClient::OptionalParameter date,
       std::tuple{"fullResponse", full_response},
       std::tuple{"columns", columns},
   });
+
   session_.SetUrl(url);
   session_.SetParameters(std::move(params));
+
   auto j = json::parse(session_.Get().text);
   return j.get<std::vector<JumpTypes::asset>>();
 }
@@ -58,8 +61,10 @@ JumpClient::get_assets(JumpClient::OptionalParameter date,
 std::vector<JumpTypes::ratio> JumpClient::get_ratios() {
   auto url = build_url(cache_url_, "{}/ratio", HOST_URL);
   auto params = cpr::Parameters{};
+
   session_.SetUrl(url);
   session_.SetParameters(std::move(params));
+
   auto j = json::parse(session_.Get().text);
   return j.get<std::vector<JumpTypes::ratio>>();
 }

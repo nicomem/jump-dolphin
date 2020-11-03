@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
   char *arg2 = argv[2];
 
   auto client = JumpClient(arg1, arg2);
-  auto ratios = client.get_ratios();
-  json j = ratios;
-  std::cout << j << std::endl;
+  auto ratios = client.get_assets();
+  json j = ratios[0];
+  std::cout << j.dump(2) << std::endl;
 }

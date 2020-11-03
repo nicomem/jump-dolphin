@@ -4,13 +4,10 @@
 
 #include <string>
 
-#include <cpr/cpr.h>
+#include <cpr/session.h>
 #include <fmt/format.h>
 #include <optional>
-#include <tuple>
 #include <vector>
-
-using json = nlohmann::json;
 
 class JumpClient {
 public:
@@ -19,10 +16,6 @@ public:
   using OptionalParameter = std::optional<std::string> &&;
 
   JumpClient(std::string &&username, std::string &&password);
-
-  static cpr::Parameters build_parameters(
-      std::initializer_list<std::tuple<ParameterName, OptionalParameter>>
-          &&opt_params);
 
   /** GET /asset
    * Récupération des informations d'actifs disponibles pour la sélection
@@ -37,9 +30,10 @@ public:
    * \param columns Paramètre de selection des colonnes. Si des valeurs est
    * envoyées, seul les colonnes dont le nom est inclus seront retournés
    */
-  std::vector<JumpTypes::asset> get_assets(OptionalParameter date,
-                                           OptionalParameter full_response,
-                                           OptionalParameter columns);
+  std::vector<JumpTypes::asset>
+  get_assets(OptionalParameter date = std::nullopt,
+             OptionalParameter full_response = std::nullopt,
+             OptionalParameter columns = std::nullopt);
 
   /** GET /ratio
    * Récuperation de la liste des ratios disponibles
