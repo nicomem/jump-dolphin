@@ -21,6 +21,33 @@ namespace JumpTypes {
 JUMP_VALUE(unsigned, unsigned)
 JUMP_VALUE(string, std::string)
 
+// Define helpers to (de)serialize optional fields
+#define TO_JSON(J, V, ID, FIELD)                                               \
+  do {                                                                         \
+    j[ID] = V.FIELD;                                                           \
+  } while (0)
+
+#define FROM_JSON(J, V, ID, FIELD)                                             \
+  do {                                                                         \
+    V.FIELD = J.at(ID).get<decltype(V.FIELD)>();                               \
+  } while (0)
+
+#define TO_JSON_OPT(J, V, ID, FIELD)                                           \
+  do {                                                                         \
+    if (V.FIELD.has_value()) {                                                 \
+      json j_v = *V.FIELD;                                                     \
+      J[ID] = j_v;                                                             \
+    }                                                                          \
+  } while (0)
+
+#define FROM_JSON_OPT(J, V, ID, FIELD)                                         \
+  do {                                                                         \
+    auto it = J.find(ID);                                                      \
+    if (it != J.end()) {                                                       \
+      V.FIELD = it->get<decltype(V.FIELD)::value_type>();                      \
+    }                                                                          \
+  } while (0)
+
 struct asset {
   /** Identifiant en base de l'actif */
   jump_value_string ASSET_DATABASE_ID;
@@ -69,24 +96,30 @@ struct quote {
 };
 
 inline void to_json(json &j, const quote &v) {
-  j = json{{"close", v.close},     {"coupon", v.coupon}, {"date", v.date},
-           {"gross", v.gross},     {"high", v.high},     {"low", v.low},
-           {"nav", v.nav},         {"open", v.open},     {"pl", v.pl},
-           {"return", v.v_return}, {"volume", v.volume}};
+  j = json{};
+  TO_JSON(j, v, "close", close);
+  TO_JSON(j, v, "coupon", coupon);
+  TO_JSON(j, v, "date", date);
+  TO_JSON(j, v, "gross", gross);
+  TO_JSON(j, v, "high", high);
+  TO_JSON(j, v, "low", low);
+  TO_JSON(j, v, "nav", nav);
+  TO_JSON(j, v, "open", open);
+  TO_JSON(j, v, "return", v_return);
+  TO_JSON(j, v, "volume", volume);
 }
 
 inline void from_json(const json &j, quote &v) {
-  j.at("close").get_to(v.close);
-  j.at("coupon").get_to(v.coupon);
-  j.at("date").get_to(v.date);
-  j.at("gross").get_to(v.gross);
-  j.at("high").get_to(v.high);
-  j.at("low").get_to(v.low);
-  j.at("nav").get_to(v.nav);
-  j.at("open").get_to(v.open);
-  j.at("pl").get_to(v.pl);
-  j.at("return").get_to(v.v_return);
-  j.at("volume").get_to(v.volume);
+  FROM_JSON(j, v, "close", close);
+  FROM_JSON(j, v, "coupon", coupon);
+  FROM_JSON(j, v, "date", date);
+  FROM_JSON(j, v, "gross", gross);
+  FROM_JSON(j, v, "high", high);
+  FROM_JSON(j, v, "low", low);
+  FROM_JSON(j, v, "nav", nav);
+  FROM_JSON(j, v, "open", open);
+  FROM_JSON(j, v, "return", v_return);
+  FROM_JSON(j, v, "volume", volume);
 }
 
 struct currency {
@@ -116,25 +149,13 @@ struct portfolio_value {
 
 inline void to_json(json &j, const portfolio_value &v) {
   j = json{};
-  if (v.asset.has_value()) {
-    json j_asset = *v.asset;
-    j["asset"] = j_asset;
-  }
-  if (v.currency.has_value()) {
-    json j_curr = *v.currency;
-    j["currency"] = j_curr;
-  }
+  TO_JSON_OPT(j, v, "asset", asset);
+  TO_JSON_OPT(j, v, "currency", currency);
 }
 
 inline void from_json(const json &j, portfolio_value &v) {
-  auto it_asset = j.find("asset");
-  if (it_asset != j.end()) {
-    v.asset = it_asset->get<portfolio_asset>();
-  }
-  auto it_curr = j.find("currency");
-  if (it_curr != j.end()) {
-    v.currency = it_curr->get<portfolio_currency>();
-  }
+  FROM_JSON_OPT(j, v, "asset", asset);
+  FROM_JSON_OPT(j, v, "currency", currency);
 }
 
 struct portfolio {
@@ -145,4 +166,40 @@ struct portfolio {
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(portfolio, currency, label, type, values)
+
+struct ratio_param {
+  /** Id des ratios à éxécuter */
+  std::vector<int32_t> ratio;
+
+  /** Id des actifs sur lesquels éxécuter le ratio */
+  std::vector<int32_t> asset;
+
+  /** Benchmark pour le ratio, Peut être nécessaire selon les ratios, voir la
+   * propriété du ratio 'is_benchmark_needed' */
+  std::optional<int32_t> benchmark;
+
+  /** Date de debut pour le ratio, Peut être nécessaire selon les ratios
+   * end_date */
+  std::optional<std::string> date;
+
+  /** Date de fin pour le ratio, Peut être nécessaire selon les ratios */
+  std::optional<std::string> end_date;
+};
+
+inline void to_json(json &j, const ratio_param &v) {
+  j = json{};
+  TO_JSON(j, v, "ratio", ratio);
+  TO_JSON(j, v, "asset", asset);
+  TO_JSON_OPT(j, v, "benchmark", benchmark);
+  TO_JSON_OPT(j, v, "date", date);
+  TO_JSON_OPT(j, v, "end_date", end_date);
+}
+
+inline void from_json(const json &j, ratio_param &v) {
+  FROM_JSON(j, v, "ratio", ratio);
+  FROM_JSON(j, v, "asset", asset);
+  FROM_JSON_OPT(j, v, "benchmark", benchmark);
+  FROM_JSON_OPT(j, v, "date", date);
+  FROM_JSON_OPT(j, v, "end_date", end_date);
+}
 } // namespace JumpTypes
