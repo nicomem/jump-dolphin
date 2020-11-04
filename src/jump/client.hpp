@@ -92,6 +92,24 @@ public:
                   OptionalParameter start_date = std::nullopt,
                   OptionalParameter end_date = std::nullopt);
 
+  /** GET /portfolio/{id}/dyn_amount_compo
+   * Récupération d'un portefeuille de composition historique
+   *
+   * \param id Identifiant technique du portefeuille, représenté par
+   * l'information "ASSET_DATABASE_ID"
+   */
+  JumpTypes::portfolio get_portfolio_compo(RequiredParameter id);
+
+  /** PUT /portfolio/{id}/dyn_amount_compo
+   * Mise a jour d'un portefeuille de composition historique
+   *
+   * \param id Identifiant technique du portefeuille, représenté par
+   * l'information "ASSET_DATABASE_ID"
+   * \param portfolio The portfolio to send
+   */
+  void put_portfolio_compo(RequiredParameter id,
+                           JumpTypes::portfolio &&portfolio);
+
   /** GET /ratio
    * Récuperation de la liste des ratios disponibles
    */
