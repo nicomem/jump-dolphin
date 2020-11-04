@@ -122,6 +122,7 @@ public:
    * informations disponibles du point d'entrée, sinon ne renvoie que le
    * sous-ensemble d'informations ayant une valeur
    */
+  // TODO return value
   void compute_ratio(OptionalParameter full_response = std::nullopt);
 
 private:

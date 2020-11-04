@@ -55,17 +55,22 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wpedantic")
 # set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
 # Source files
+set(COSTLY_HEADERS
+    jump/client.hpp
+    jump/types.hpp
+)
+list(TRANSFORM COSTLY_HEADERS PREPEND "src/")
+
 set(SOURCES
     main.cpp
 
-    jump/client.hpp
     jump/client.cpp
-    jump/types.hpp
 )
 list(TRANSFORM SOURCES PREPEND "src/")
 
 # Executable
 add_executable(dolphin ${SOURCES})
+target_precompile_headers(dolphin PRIVATE ${COSTLY_HEADERS})
 target_link_libraries(dolphin PRIVATE CLI11 nlohmann_json::nlohmann_json cpr::cpr fmt::fmt)
 
 # Set C++ macro for bench to locate files
