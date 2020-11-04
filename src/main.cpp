@@ -4,9 +4,6 @@
 
 #include "jump/client.hpp"
 
-// for convenience
-using json = nlohmann::json;
-
 int main(int argc, char *argv[]) {
   auto app = CLI::App{"Dolphin"};
 

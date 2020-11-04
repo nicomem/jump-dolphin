@@ -35,7 +35,6 @@ struct asset {
   jump_value_string TYPE;
 };
 
-// TODO, cannot use directly
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(asset, ASSET_DATABASE_ID, LABEL, CURRENCY,
                                    TYPE)
 
@@ -48,4 +47,42 @@ struct ratio {
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ratio, id, is_benchmark_needed, is_percent,
                                    name)
+
+struct quote {
+  float close;
+  unsigned coupon;
+  std::string date;
+  float gross;
+  float high;
+  float low;
+  float nav;
+  float open;
+  double pl;
+  // Since C++ does not support using reserved keywords as identifier
+  // and JSON lib does not support field alias,
+  // we must define the conversion functions ourselves
+  double v_return;
+  unsigned volume;
+};
+
+inline void to_json(json &j, const quote &v) {
+  j = json{{"close", v.close},     {"coupon", v.coupon}, {"date", v.date},
+           {"gross", v.gross},     {"high", v.high},     {"low", v.low},
+           {"nav", v.nav},         {"open", v.open},     {"pl", v.pl},
+           {"return", v.v_return}, {"volume", v.volume}};
+}
+
+inline void from_json(const json &j, quote &v) {
+  j.at("close").get_to(v.close);
+  j.at("coupon").get_to(v.coupon);
+  j.at("date").get_to(v.date);
+  j.at("gross").get_to(v.gross);
+  j.at("high").get_to(v.high);
+  j.at("low").get_to(v.low);
+  j.at("nav").get_to(v.nav);
+  j.at("open").get_to(v.open);
+  j.at("pl").get_to(v.pl);
+  j.at("return").get_to(v.v_return);
+  j.at("volume").get_to(v.volume);
+}
 } // namespace JumpTypes
