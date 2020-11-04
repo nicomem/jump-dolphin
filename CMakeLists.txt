@@ -55,16 +55,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wpedantic")
 # set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
 # Source files
-set(COSTLY_HEADERS
-    jump/client.hpp
-    jump/types.hpp
-)
-list(TRANSFORM COSTLY_HEADERS PREPEND "src/")
-
 set(SOURCES
     main.cpp
 
-    jump/client.cpp
+    jump/client.hpp
+    jump/private_client.cpp
+    jump/private_client.hpp
+    jump/types.hpp
 )
 list(TRANSFORM SOURCES PREPEND "src/")
 

@@ -3,6 +3,7 @@
 #include <CLI/CLI.hpp>
 
 #include "jump/client.hpp"
+#include "jump/types.hpp"
 
 int main(int argc, char *argv[]) {
   auto app = CLI::App{"Dolphin"};
@@ -16,12 +17,12 @@ int main(int argc, char *argv[]) {
 
   CLI11_PARSE(app, argc, argv);
 
-  auto client = JumpClient(std::move(username), std::move(password));
-  auto assets = client.get_assets();
+  auto client = JumpClient::build(std::move(username), std::move(password));
+  auto assets = client->get_assets();
   json j = assets[0];
   std::cout << j.dump(2) << std::endl;
 
-  auto ratios = client.get_ratios();
+  auto ratios = client->get_ratios();
   j = ratios[0];
   std::cout << j.dump(2) << std::endl;
 }
