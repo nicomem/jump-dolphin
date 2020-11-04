@@ -118,12 +118,15 @@ public:
   /** POST /ratio/invoke
    * Calcul du résultat d'une liste de ratios sur une liste d'actifs
    *
+   * \param ratio_param Paramètre d'exécution contenant une liste d'actifs, une
+   * liste de ratios, une période, une fréquence ainsi qu'un actif benchmark
    * \param full_response Si vrai, la réponse envoyée contient l'intégralité des
    * informations disponibles du point d'entrée, sinon ne renvoie que le
    * sous-ensemble d'informations ayant une valeur
    */
-  // TODO return value
-  void compute_ratio(OptionalParameter full_response = std::nullopt);
+  JumpTypes::asset_ratio_map
+  compute_ratio(JumpTypes::ratio_param &&ratio_param,
+                OptionalParameter full_response = std::nullopt);
 
 private:
   constexpr static std::string_view HOST_URL =

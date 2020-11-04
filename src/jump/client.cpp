@@ -131,8 +131,7 @@ void JumpClient::put_portfolio_compo(RequiredParameter id,
 
   // Build and set the body
   json j_body = portfolio;
-  auto body = cpr::Body{j_body.dump()};
-  session_.SetBody(std::move(body));
+  session_.SetBody({j_body});
 
   // Send the PUT request
   session_.Put();
@@ -150,4 +149,26 @@ std::vector<JumpTypes::ratio> JumpClient::get_ratios() {
 
   auto j = json::parse(session_.Get().text);
   return j.get<std::vector<JumpTypes::ratio>>();
+}
+
+JumpTypes::asset_ratio_map
+JumpClient::compute_ratio(JumpTypes::ratio_param &&ratio_param,
+                          OptionalParameter full_response) {
+  auto url = build_url(cache_url_, "{}/ratio/invoke", HOST_URL);
+  auto params = build_parameters({std::tuple{"fullResponse", full_response}});
+
+  session_.SetUrl(url);
+  session_.SetParameters(std::move(params));
+
+  // Build and set the body
+  json j_body = ratio_param;
+  session_.SetBody({j_body});
+
+  // Send the request
+  auto j = json::parse(session_.Post().text);
+
+  // Clear the body
+  session_.SetBody({});
+
+  return j.get<JumpTypes::asset_ratio_map>();
 }

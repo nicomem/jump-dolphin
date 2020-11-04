@@ -229,4 +229,23 @@ inline void from_json(const json &j, ratio_param &v) {
   FROM_JSON_OPT(j, v, "date", date);
   FROM_JSON_OPT(j, v, "end_date", end_date);
 }
+
+/** Un objet référençant chacun des actifs, eux-mêmes étant des objets
+ * référençant chaque ratio exécuté avec succès contenant la valeur calculée:
+ *
+ * <asset_ratio_map>: { "id_actif": <ratio_obj> }
+ * <ratio_obj>: { "id_ratio": <jump_value_string> }
+ */
+struct asset_ratio_map {
+  using ratio_obj = std::unordered_map<std::string, jump_value_string>;
+
+  std::unordered_map<std::string, ratio_obj> value;
+};
+
+inline void to_json(json &j, const asset_ratio_map &v) { j = v.value; }
+
+inline void from_json(const json &j, asset_ratio_map &v) {
+  v.value = j.get<decltype(v.value)>();
+}
+
 } // namespace JumpTypes
