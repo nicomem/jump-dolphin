@@ -171,10 +171,24 @@ inline void from_json(const json &j, portfolio_value &v) {
   FROM_JSON_OPT(j, v, "currency", currency);
 }
 
+enum class dyn_amount_type { back, front };
+
+NLOHMANN_JSON_SERIALIZE_ENUM(dyn_amount_type,
+                             {{dyn_amount_type::back, "back"},
+                              {dyn_amount_type::front, "front"}})
+
 struct portfolio {
-  JumpTypes::currency currency;
+  /** Nom du portefeuille */
   std::string label;
-  std::string type;
+
+  /** Devise. L'identifiant est le code ISO 4217 de la devise */
+  JumpTypes::currency currency;
+
+  /** Type de portfolio DynAmount */
+  dyn_amount_type type;
+
+  /** Contenu du portefeuille par date. Les clés de cet objet sont au format
+   * 'date' */
   std::unordered_map<std::string, std::vector<portfolio_value>> values;
 };
 
