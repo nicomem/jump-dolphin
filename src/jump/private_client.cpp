@@ -1,9 +1,8 @@
 #include "private_client.hpp"
 
-#include "types.hpp"
+#include "types_json.hpp"
 
 #include <tuple>
-#include <vector>
 
 using ParamOptKV = std::tuple<PrivateJumpClient::ParameterName,
                               PrivateJumpClient::OptionalParameter>;

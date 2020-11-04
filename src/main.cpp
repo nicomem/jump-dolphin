@@ -3,7 +3,7 @@
 #include <CLI/CLI.hpp>
 
 #include "jump/client.hpp"
-#include "jump/types.hpp"
+#include "jump/types_json.hpp"
 
 int main(int argc, char *argv[]) {
   auto app = CLI::App{"Dolphin"};

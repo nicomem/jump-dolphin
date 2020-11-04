@@ -61,6 +61,7 @@ set(SOURCES
     jump/client.hpp
     jump/private_client.cpp
     jump/private_client.hpp
+    jump/types_json.hpp
     jump/types.hpp
 )
 list(TRANSFORM SOURCES PREPEND "src/")

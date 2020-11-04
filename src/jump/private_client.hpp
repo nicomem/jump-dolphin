@@ -45,7 +45,7 @@ public:
                 OptionalParameter full_response = std::nullopt) override;
 
 private:
-  constexpr static const char *HOST_URL =
+  constexpr static std::string_view HOST_URL =
       "https://dolphin.jump-technology.com:8443/api/v1";
 
   /** The session to the API server, makes it able to reuse parameters */

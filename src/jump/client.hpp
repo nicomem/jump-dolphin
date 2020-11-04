@@ -1,19 +1,9 @@
 #pragma once
 
+#include "types.hpp"
+
 #include <memory>
 #include <optional>
-#include <string>
-#include <vector>
-
-namespace JumpTypes {
-class asset_ratio_map;
-class asset;
-class jump_value_string;
-class portfolio;
-class quote;
-class ratio_param;
-class ratio;
-} // namespace JumpTypes
 
 struct JumpClient {
   using ParameterName = std::string &&;
