@@ -68,8 +68,12 @@ list(TRANSFORM SOURCES PREPEND "src/")
 
 # Executable
 add_executable(dolphin ${SOURCES})
-target_precompile_headers(dolphin PRIVATE ${COSTLY_HEADERS})
-target_link_libraries(dolphin PRIVATE CLI11 nlohmann_json::nlohmann_json cpr::cpr fmt::fmt)
+target_link_libraries(dolphin PRIVATE 
+    CLI11
+    nlohmann_json::nlohmann_json
+    cpr::cpr
+    fmt::fmt
+)
 
 # Set C++ macro for bench to locate files
 target_compile_definitions(dolphin PRIVATE CMAKE_CURRENT_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
