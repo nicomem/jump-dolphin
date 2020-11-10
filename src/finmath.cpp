@@ -27,11 +27,11 @@ double compute_volatility(const covariance_matrix_t &cov_matrix,
   return vol;
 }
 
-double compute_sell_value(const portfolio_t &portfolio) {
-  // TODO
-  auto r = 0.;
-  for (const auto &[w1, asset1] : portfolio.investments) {
-    r += w1;
+double compute_sell_value(const portfolio_t &portfolio,
+                          const assets_day_values_t &end_values) {
+  double r = 0;
+  for (const auto &[w, asset] : portfolio.investments) {
+    r += w * end_values[asset];
   }
   return r;
 }
@@ -42,10 +42,11 @@ double compute_dividends(const portfolio_t &portfolio) {
 }
 
 double compute_sharpe(const covariance_matrix_t &cov_matrix,
-                      const portfolio_t &portfolio) {
+                      const portfolio_t &portfolio,
+                      const assets_day_values_t &end_values) {
   // Compute the capital at the end of the period
   auto dividends_assets = compute_dividends(portfolio);
-  auto sell_value = compute_sell_value(portfolio);
+  auto sell_value = compute_sell_value(portfolio, end_values);
   auto capital_end =
       dividends_assets + sell_value + portfolio.not_invested_capital;
 

@@ -41,6 +41,9 @@ struct portfolio_t {
 using covariance_matrix_t =
     std::array<std::array<double, NB_ASSETS>, NB_ASSETS>;
 
+/** Value for each asset at a specific day */
+using assets_day_values_t = std::array<asset_day_value_t, NB_ASSETS>;
+
 /** Compute the covariance between two assets */
 double compute_covariance(const asset_period_values_t &x_values,
                           asset_day_value_t x_mean,
@@ -51,13 +54,15 @@ double compute_covariance(const asset_period_values_t &x_values,
 double compute_volatility(const covariance_matrix_t &cov_matrix,
                           const portfolio_t &portfolio);
 
-/** TODO: Compute the sell value of the portfolio */
-double compute_sell_value(const portfolio_t &portfolio);
+/** Compute the sell value of the portfolio */
+double compute_sell_value(const portfolio_t &portfolio,
+                          const assets_day_values_t &end_values);
 
 /** TODO: Compute the dividends received from the portfolio */
 double compute_dividends(const portfolio_t &portfolio);
 
 /** Compute the sharpe of a portfolio */
 double compute_sharpe(const covariance_matrix_t &cov_matrix,
-                      const portfolio_t &portfolio);
+                      const portfolio_t &portfolio,
+                      const assets_day_values_t &end_values);
 } // namespace finmath
