@@ -25,13 +25,13 @@ using asset_period_values_t = std::array<asset_day_value_t, NB_DAYS>;
  * It is a percent of the invested capital */
 using asset_weight_t = double;
 
-/** An asset identification string */
-using asset_id_t = const std::string &;
+/** The index of the asset (e.g. in the covariance matrix) */
+using asset_index_t = unsigned;
 
 /** A investment portfolio */
 struct portfolio_t {
   /** The invested assets and their weight in the portfolio */
-  std::vector<std::tuple<asset_weight_t, asset_id_t>> investments;
+  std::vector<std::tuple<asset_weight_t, asset_index_t>> investments;
 
   /** The capital that have not been invested */
   asset_weight_t not_invested_capital;
@@ -42,8 +42,10 @@ using covariance_matrix_t =
     std::array<std::array<double, NB_ASSETS>, NB_ASSETS>;
 
 /** Compute the covariance between two assets */
-double compute_covariance(const asset_period_values_t &asset1_values,
-                          const asset_period_values_t &asset2_values);
+double compute_covariance(const asset_period_values_t &x_values,
+                          asset_day_value_t x_mean,
+                          const asset_period_values_t &y_values,
+                          asset_day_value_t y_mean);
 
 /** Return the volatility of the portfolio */
 double compute_volatility(const covariance_matrix_t &cov_matrix,
