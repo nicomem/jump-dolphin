@@ -51,6 +51,12 @@ double compute_covariance(const asset_period_values_t &x_values,
 double compute_volatility(const covariance_matrix_t &cov_matrix,
                           const portfolio_t &portfolio);
 
+/** TODO: Compute the sell value of the portfolio */
+double compute_sell_value(const portfolio_t &portfolio);
+
+/** TODO: Compute the dividends received from the portfolio */
+double compute_dividends(const portfolio_t &portfolio);
+
 /** Compute the sharpe of a portfolio */
 double compute_sharpe(const covariance_matrix_t &cov_matrix,
                       const portfolio_t &portfolio);
