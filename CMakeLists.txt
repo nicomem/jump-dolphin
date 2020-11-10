@@ -66,6 +66,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wpedantic")
 set(SOURCES
     main.cpp
 
+    finmath.cpp
+    finmath.hpp
     save_data.cpp
     save_data.hpp
 
