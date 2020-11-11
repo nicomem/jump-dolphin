@@ -19,10 +19,12 @@ int main(int argc, char *argv[]) {
 
   auto client = JumpClient::build(std::move(username), std::move(password));
   auto rate = client->get_currency_change_rate(
-      "JPY", "EUR", std::make_optional("2017-01-08"));
+      JumpTypes::CurrencyCode::JPY, JumpTypes::CurrencyCode::EUR,
+      std::make_optional("2017-01-08"));
   std::cout << rate << '\n';
 
-  rate = client->get_currency_change_rate("JPY", "EUR",
+  rate = client->get_currency_change_rate(JumpTypes::CurrencyCode::JPY,
+                                          JumpTypes::CurrencyCode::EUR,
                                           std::make_optional("2017-08-01"));
   std::cout << rate << '\n';
 }

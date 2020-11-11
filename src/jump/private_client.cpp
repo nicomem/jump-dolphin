@@ -181,12 +181,11 @@ PrivateJumpClient::compute_ratio(JumpTypes::RatioParam &&ratio_param,
   return j.get<JumpTypes::AssetRatioMap>();
 }
 
-double
-PrivateJumpClient::get_currency_change_rate(RequiredParameter currency_src,
-                                            RequiredParameter currency_dest,
-                                            OptionalParameter date) {
+double PrivateJumpClient::get_currency_change_rate(
+    JumpTypes::CurrencyCode currency_src, JumpTypes::CurrencyCode currency_dest,
+    OptionalParameter date) {
   auto url = build_url(cache_url_, "{}/currency/rate/{}/to/{}", HOST_URL,
-                       currency_src, currency_dest);
+                       currency_str(currency_src), currency_str(currency_dest));
   auto params = build_parameters({std::tuple{"date", date}});
 
   session_.SetUrl(url);

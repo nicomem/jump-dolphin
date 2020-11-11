@@ -45,8 +45,8 @@ public:
                 OptionalParameter full_response = std::nullopt) override;
 
   double
-  get_currency_change_rate(RequiredParameter currency_src,
-                           RequiredParameter currency_dest,
+  get_currency_change_rate(JumpTypes::CurrencyCode currency_src,
+                           JumpTypes::CurrencyCode currency_dest,
                            OptionalParameter date = std::nullopt) override;
 
 private:

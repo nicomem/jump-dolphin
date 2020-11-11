@@ -79,6 +79,25 @@ struct portfolio_value {
 
 enum class CurrencyCode { EUR, GBP, JPY, NOK, SEK, USD };
 
+static constexpr std::string_view currency_str(CurrencyCode code) {
+  switch (code) {
+  case CurrencyCode::EUR:
+    return "EUR";
+  case CurrencyCode::GBP:
+    return "GBP";
+  case CurrencyCode::JPY:
+    return "JPY";
+  case CurrencyCode::NOK:
+    return "NOK";
+  case CurrencyCode::SEK:
+    return "SEK";
+  case CurrencyCode::USD:
+    return "USD";
+  default:
+    return "";
+  }
+}
+
 enum class DynAmountType { back, front };
 
 struct Portfolio {
