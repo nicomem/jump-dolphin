@@ -124,4 +124,16 @@ struct JumpClient {
   virtual JumpTypes::asset_ratio_map
   compute_ratio(JumpTypes::ratio_param &&ratio_param,
                 OptionalParameter full_response = std::nullopt) = 0;
+
+  /** GET /currency/rate/<currency_src>/to/<currency_dest>
+   * Get the currency change rate from one type to another
+   *
+   * \param currency_src ID of the currency that we have
+   * \param currency_dest ID of the currency that we want
+   * \param date The target conversion date
+   */
+  virtual double
+  get_currency_change_rate(RequiredParameter currency_src,
+                           RequiredParameter currency_dest,
+                           OptionalParameter date = std::nullopt) = 0;
 };

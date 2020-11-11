@@ -18,11 +18,11 @@ int main(int argc, char *argv[]) {
   CLI11_PARSE(app, argc, argv);
 
   auto client = JumpClient::build(std::move(username), std::move(password));
-  auto assets = client->get_assets();
-  json j = assets[0];
-  std::cout << j.dump(2) << std::endl;
+  auto rate = client->get_currency_change_rate(
+      "JPY", "EUR", std::make_optional("2017-01-08"));
+  std::cout << rate << '\n';
 
-  auto ratios = client->get_ratios();
-  j = ratios[0];
-  std::cout << j.dump(2) << std::endl;
+  rate = client->get_currency_change_rate("JPY", "EUR",
+                                          std::make_optional("2017-08-01"));
+  std::cout << rate << '\n';
 }

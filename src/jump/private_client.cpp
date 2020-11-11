@@ -2,24 +2,21 @@
 
 #include "types_json.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <tuple>
 
-using ParamOptKV = std::tuple<PrivateJumpClient::ParameterName,
-                              PrivateJumpClient::OptionalParameter>;
+using ParamOptKV =
+    std::tuple<std::string_view, PrivateJumpClient::OptionalParameter>;
 
 static cpr::Parameters
 build_parameters(std::initializer_list<ParamOptKV> &&opt_params) {
-  auto holder = cpr::CurlHolder();
   auto params = cpr::Parameters();
 
   for (auto &&[key, value] : opt_params) {
     // Only add the parameter if the value is present
     if (value.has_value()) {
-      // Create the parameter
-      auto param = cpr::Parameter{key, value.value()};
-
-      // And add it to the parameters
-      params.AddParameter(param, holder);
+      params.Add({std::string(key), value.value()});
     }
   }
 
@@ -182,4 +179,24 @@ PrivateJumpClient::compute_ratio(JumpTypes::ratio_param &&ratio_param,
   session_.SetBody({});
 
   return j.get<JumpTypes::asset_ratio_map>();
+}
+
+double
+PrivateJumpClient::get_currency_change_rate(RequiredParameter currency_src,
+                                            RequiredParameter currency_dest,
+                                            OptionalParameter date) {
+  auto url = build_url(cache_url_, "{}/currency/rate/{}/to/{}", HOST_URL,
+                       currency_src, currency_dest);
+  auto params = build_parameters({std::tuple{"date", date}});
+
+  session_.SetUrl(url);
+  session_.SetParameters(std::move(params));
+
+  auto j = json::parse(session_.Get().text);
+
+  // The rate value is a "double number" that uses a comma instead of a dot
+  // So we must do the parsing ourselves...
+  auto rate_str = j.at("rate").at("value").get<std::string>();
+  std::replace(rate_str.begin(), rate_str.end(), ',', '.');
+  return std::stod(rate_str);
 }

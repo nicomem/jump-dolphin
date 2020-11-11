@@ -44,6 +44,11 @@ public:
   compute_ratio(JumpTypes::ratio_param &&ratio_param,
                 OptionalParameter full_response = std::nullopt) override;
 
+  double
+  get_currency_change_rate(RequiredParameter currency_src,
+                           RequiredParameter currency_dest,
+                           OptionalParameter date = std::nullopt) override;
+
 private:
   constexpr static std::string_view HOST_URL =
       "https://dolphin.jump-technology.com:8443/api/v1";

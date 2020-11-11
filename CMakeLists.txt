@@ -17,7 +17,10 @@ FetchContent_Declare(nlohmann_json
 FetchContent_Declare(
     cpr
     GIT_REPOSITORY https://github.com/whoshuu/cpr
-    GIT_TAG 1.5.2
+    # Hash for the 2020-11-10 master
+    # 1.5.2 requires curl PROTOCOLS but master does not
+    # -> could not use system curl lib before (in most cases)
+    GIT_TAG 47cc92045247c429037324cb4eee67ede81c35cf
     GIT_SHALLOW true
 )
 FetchContent_Declare(
