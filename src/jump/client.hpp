@@ -27,7 +27,7 @@ struct JumpClient {
    * \param columns Paramètre de selection des colonnes. Si des valeurs est
    * envoyées, seul les colonnes dont le nom est inclus seront retournés
    */
-  virtual std::vector<JumpTypes::asset>
+  virtual std::vector<JumpTypes::Asset>
   get_assets(OptionalParameter date = std::nullopt,
              OptionalParameter full_response = std::nullopt,
              OptionalParameter columns = std::nullopt) = 0;
@@ -47,7 +47,7 @@ struct JumpClient {
    * \param columns Paramètre de selection des colonnes. Si des valeurs est
    * envoyées, seul les colonnes dont le nom est inclus seront retournés
    */
-  virtual JumpTypes::asset
+  virtual JumpTypes::Asset
   get_asset(RequiredParameter id, OptionalParameter date = std::nullopt,
             OptionalParameter full_response = std::nullopt,
             OptionalParameter columns = std::nullopt) = 0;
@@ -67,7 +67,7 @@ struct JumpClient {
    * informations disponibles du point d'entrée, sinon ne renvoie que le
    * sous-ensemble d'informations ayant une valeur
    */
-  virtual JumpTypes::jump_value_string
+  virtual JumpTypes::JumpValueString
   get_asset_attribute(RequiredParameter id, RequiredParameter attr_name,
                       OptionalParameter date = std::nullopt,
                       OptionalParameter full_response = std::nullopt) = 0;
@@ -84,7 +84,7 @@ struct JumpClient {
    * (https://www.ietf.org/rfc/rfc3339.txt) pour la récupération des données
    * (par défaut : date du jour)
    */
-  virtual std::vector<JumpTypes::quote>
+  virtual std::vector<JumpTypes::Quote>
   get_asset_quote(RequiredParameter id,
                   OptionalParameter start_date = std::nullopt,
                   OptionalParameter end_date = std::nullopt) = 0;
@@ -95,7 +95,7 @@ struct JumpClient {
    * \param id Identifiant technique du portefeuille, représenté par
    * l'information "ASSET_DATABASE_ID"
    */
-  virtual JumpTypes::portfolio get_portfolio_compo(RequiredParameter id) = 0;
+  virtual JumpTypes::Portfolio get_portfolio_compo(RequiredParameter id) = 0;
 
   /** PUT /portfolio/{id}/dyn_amount_compo
    * Mise a jour d'un portefeuille de composition historique
@@ -105,12 +105,12 @@ struct JumpClient {
    * \param portfolio The portfolio to send
    */
   virtual void put_portfolio_compo(RequiredParameter id,
-                                   JumpTypes::portfolio &&portfolio) = 0;
+                                   JumpTypes::Portfolio &&portfolio) = 0;
 
   /** GET /ratio
    * Récuperation de la liste des ratios disponibles
    */
-  virtual std::vector<JumpTypes::ratio> get_ratios() = 0;
+  virtual std::vector<JumpTypes::Ratio> get_ratios() = 0;
 
   /** POST /ratio/invoke
    * Calcul du résultat d'une liste de ratios sur une liste d'actifs
@@ -121,8 +121,8 @@ struct JumpClient {
    * informations disponibles du point d'entrée, sinon ne renvoie que le
    * sous-ensemble d'informations ayant une valeur
    */
-  virtual JumpTypes::asset_ratio_map
-  compute_ratio(JumpTypes::ratio_param &&ratio_param,
+  virtual JumpTypes::AssetRatioMap
+  compute_ratio(JumpTypes::RatioParam &&ratio_param,
                 OptionalParameter full_response = std::nullopt) = 0;
 
   /** GET /currency/rate/<currency_src>/to/<currency_dest>

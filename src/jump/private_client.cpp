@@ -45,7 +45,7 @@ static cpr::Url build_url(fmt::memory_buffer &buffer,
   return cpr::Url{buffer.data(), buffer.size()};
 }
 
-std::vector<JumpTypes::asset>
+std::vector<JumpTypes::Asset>
 PrivateJumpClient::get_assets(OptionalParameter date,
                               OptionalParameter full_response,
                               OptionalParameter columns) {
@@ -60,10 +60,10 @@ PrivateJumpClient::get_assets(OptionalParameter date,
   session_.SetParameters(std::move(params));
 
   auto j = json::parse(session_.Get().text);
-  return j.get<std::vector<JumpTypes::asset>>();
+  return j.get<std::vector<JumpTypes::Asset>>();
 }
 
-JumpTypes::asset PrivateJumpClient::get_asset(RequiredParameter id,
+JumpTypes::Asset PrivateJumpClient::get_asset(RequiredParameter id,
                                               OptionalParameter date,
                                               OptionalParameter full_response,
                                               OptionalParameter columns) {
@@ -78,10 +78,10 @@ JumpTypes::asset PrivateJumpClient::get_asset(RequiredParameter id,
   session_.SetParameters(std::move(params));
 
   auto j = json::parse(session_.Get().text);
-  return j.get<JumpTypes::asset>();
+  return j.get<JumpTypes::Asset>();
 }
 
-JumpTypes::jump_value_string PrivateJumpClient::get_asset_attribute(
+JumpTypes::JumpValueString PrivateJumpClient::get_asset_attribute(
     RequiredParameter id, RequiredParameter attr_name, OptionalParameter date,
     OptionalParameter full_response) {
   auto url = build_url(cache_url_, "{}/asset/{}/attribute/{}", HOST_URL, id,
@@ -95,10 +95,10 @@ JumpTypes::jump_value_string PrivateJumpClient::get_asset_attribute(
   session_.SetParameters(std::move(params));
 
   auto j = json::parse(session_.Get().text);
-  return j.get<JumpTypes::jump_value_string>();
+  return j.get<JumpTypes::JumpValueString>();
 }
 
-std::vector<JumpTypes::quote>
+std::vector<JumpTypes::Quote>
 PrivateJumpClient::get_asset_quote(RequiredParameter id,
                                    OptionalParameter start_date,
                                    OptionalParameter end_date) {
@@ -112,10 +112,10 @@ PrivateJumpClient::get_asset_quote(RequiredParameter id,
   session_.SetParameters(std::move(params));
 
   auto j = json::parse(session_.Get().text);
-  return j.get<std::vector<JumpTypes::quote>>();
+  return j.get<std::vector<JumpTypes::Quote>>();
 }
 
-JumpTypes::portfolio
+JumpTypes::Portfolio
 PrivateJumpClient::get_portfolio_compo(RequiredParameter id) {
   auto url =
       build_url(cache_url_, "{}/portfolio/{}/dyn_amount_compo", HOST_URL, id);
@@ -125,11 +125,11 @@ PrivateJumpClient::get_portfolio_compo(RequiredParameter id) {
   session_.SetParameters(std::move(params));
 
   auto j = json::parse(session_.Get().text);
-  return j.get<JumpTypes::portfolio>();
+  return j.get<JumpTypes::Portfolio>();
 }
 
 void PrivateJumpClient::put_portfolio_compo(RequiredParameter id,
-                                            JumpTypes::portfolio &&portfolio) {
+                                            JumpTypes::Portfolio &&portfolio) {
   auto url =
       build_url(cache_url_, "{}/portfolio/{}/dyn_amount_compo", HOST_URL, id);
   auto params = cpr::Parameters{};
@@ -148,7 +148,7 @@ void PrivateJumpClient::put_portfolio_compo(RequiredParameter id,
   session_.SetBody({});
 }
 
-std::vector<JumpTypes::ratio> PrivateJumpClient::get_ratios() {
+std::vector<JumpTypes::Ratio> PrivateJumpClient::get_ratios() {
   auto url = build_url(cache_url_, "{}/ratio", HOST_URL);
   auto params = cpr::Parameters{};
 
@@ -156,11 +156,11 @@ std::vector<JumpTypes::ratio> PrivateJumpClient::get_ratios() {
   session_.SetParameters(std::move(params));
 
   auto j = json::parse(session_.Get().text);
-  return j.get<std::vector<JumpTypes::ratio>>();
+  return j.get<std::vector<JumpTypes::Ratio>>();
 }
 
-JumpTypes::asset_ratio_map
-PrivateJumpClient::compute_ratio(JumpTypes::ratio_param &&ratio_param,
+JumpTypes::AssetRatioMap
+PrivateJumpClient::compute_ratio(JumpTypes::RatioParam &&ratio_param,
                                  OptionalParameter full_response) {
   auto url = build_url(cache_url_, "{}/ratio/invoke", HOST_URL);
   auto params = build_parameters({std::tuple{"fullResponse", full_response}});
@@ -178,7 +178,7 @@ PrivateJumpClient::compute_ratio(JumpTypes::ratio_param &&ratio_param,
   // Clear the body
   session_.SetBody({});
 
-  return j.get<JumpTypes::asset_ratio_map>();
+  return j.get<JumpTypes::AssetRatioMap>();
 }
 
 double

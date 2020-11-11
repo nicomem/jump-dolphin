@@ -10,39 +10,42 @@ namespace JumpTypes {
 // Instead of returning a value with the correct type.
 // And since the JSON lib does not seems to be able to generate the boilerplate
 // on templated structs, we create as many `jump_values` as we want types of it
-struct jump_value_unsigned {
-  unsigned value;
-};
-
-struct jump_value_string {
+struct JumpValueString {
   std::string value;
 };
 
-struct asset {
-  /** Identifiant en base de l'actif */
-  jump_value_string id;
-
-  /** Nom de l'actif */
-  jump_value_string label;
-
-  /** Currency */
-  jump_value_string currency;
-
-  /** Type d'actifs */
-  jump_value_string type;
-
-  /** Dernière valeur de clôture */
-  std::optional<jump_value_string> last_close_value;
+enum class AssetType {
+  BOND,
+  FUND,
+  PORTFOLIO,
+  STOCK,
 };
 
-struct ratio {
+struct Asset {
+  /** Identifiant en base de l'actif */
+  std::string id;
+
+  /** Nom de l'actif */
+  AssetType label;
+
+  /** Currency */
+  std::string currency;
+
+  /** Type d'actifs */
+  std::string type;
+
+  /** Dernière valeur de clôture */
+  std::optional<std::string> last_close_value;
+};
+
+struct Ratio {
   unsigned id;
   bool is_benchmark_needed;
   bool is_percent;
   std::string name;
 };
 
-struct quote {
+struct Quote {
   float close;
   unsigned coupon;
   std::string date;
@@ -59,43 +62,41 @@ struct quote {
   unsigned volume;
 };
 
-struct currency {
-  std::string code;
-};
-
-struct portfolio_asset {
+struct PortfolioAsset {
   int32_t asset;
   double quantity;
 };
 
-struct portfolio_currency {
+struct PortfolioCurrency {
   std::string currency;
   double amount;
 };
 
 struct portfolio_value {
-  std::optional<portfolio_asset> asset;
-  std::optional<portfolio_currency> currency;
+  std::optional<PortfolioAsset> asset;
+  std::optional<PortfolioCurrency> currency;
 };
 
-enum class dyn_amount_type { back, front };
+enum class CurrencyCode { EUR, GBP, JPY, NOK, SEK, USD };
 
-struct portfolio {
+enum class DynAmountType { back, front };
+
+struct Portfolio {
   /** Nom du portefeuille */
   std::string label;
 
   /** Devise. L'identifiant est le code ISO 4217 de la devise */
-  JumpTypes::currency currency;
+  CurrencyCode currency;
 
   /** Type de portfolio DynAmount */
-  dyn_amount_type type;
+  DynAmountType type;
 
   /** Contenu du portefeuille par date. Les clés de cet objet sont au format
    * 'date' */
   std::unordered_map<std::string, std::vector<portfolio_value>> values;
 };
 
-struct ratio_param {
+struct RatioParam {
   /** Id des ratios à éxécuter */
   std::vector<int32_t> ratio;
 
@@ -118,10 +119,10 @@ struct ratio_param {
  * référençant chaque ratio exécuté avec succès contenant la valeur calculée:
  *
  * <asset_ratio_map>: { "id_actif": <ratio_obj> }
- * <ratio_obj>: { "id_ratio": <jump_value_string> }
+ * <ratio_obj>: { "id_ratio": <JumpValueString> }
  */
-struct asset_ratio_map {
-  using ratio_obj = std::unordered_map<std::string, jump_value_string>;
+struct AssetRatioMap {
+  using ratio_obj = std::unordered_map<std::string, JumpValueString>;
 
   std::unordered_map<std::string, ratio_obj> value;
 };
