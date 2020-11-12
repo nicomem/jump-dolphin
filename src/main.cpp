@@ -4,8 +4,11 @@
 
 #include "jump/client.hpp"
 #include "jump/types_json.hpp"
+#include "save_data.hpp"
 
 int main(int argc, char *argv[]) {
+  constexpr auto VERBOSE = true;
+
   auto app = CLI::App{"Dolphin"};
 
   std::string username, password;
@@ -18,4 +21,7 @@ int main(int argc, char *argv[]) {
   CLI11_PARSE(app, argc, argv);
 
   auto client = JumpClient::build(std::move(username), std::move(password));
+
+  auto days_assets = SaveData::every_days_assets(*client, VERBOSE);
+  std::cout << days_assets.size() << '\n';
 }

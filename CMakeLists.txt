@@ -14,8 +14,7 @@ FetchContent_Declare(nlohmann_json
     GIT_TAG v3.9.1
     GIT_SHALLOW true
 )
-FetchContent_Declare(
-    cpr
+FetchContent_Declare(cpr
     GIT_REPOSITORY https://github.com/whoshuu/cpr
     # Hash for the 2020-11-10 master
     # 1.5.2 requires curl PROTOCOLS but master does not
@@ -23,10 +22,14 @@ FetchContent_Declare(
     GIT_TAG 47cc92045247c429037324cb4eee67ede81c35cf
     GIT_SHALLOW true
 )
-FetchContent_Declare(
-    fmt
+FetchContent_Declare(fmt
     GIT_REPOSITORY https://github.com/fmtlib/fmt
     GIT_TAG 7.1.1
+    GIT_SHALLOW true
+)
+FetchContent_Declare(date
+    GIT_REPOSITORY https://github.com/HowardHinnant/date
+    GIT_TAG v3.0.0
     GIT_SHALLOW true
 )
 
@@ -42,6 +45,8 @@ message("Fetching 'cpr'")
 FetchContent_MakeAvailable(cpr)
 message("Fetching 'fmt'")
 FetchContent_MakeAvailable(fmt)
+message("Fetching 'date'")
+FetchContent_MakeAvailable(date)
 
 # Print a warning if user did not set the Release mode
 if (NOT CMAKE_BUILD_TYPE STREQUAL Release)
@@ -61,6 +66,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wpedantic")
 set(SOURCES
     main.cpp
 
+    save_data.cpp
+    save_data.hpp
+
     jump/client.hpp
     jump/private_client.cpp
     jump/private_client.hpp
@@ -76,6 +84,7 @@ target_link_libraries(dolphin PRIVATE
     nlohmann_json::nlohmann_json
     cpr::cpr
     fmt::fmt
+    date::date
 )
 
 # Set C++ macro for bench to locate files
