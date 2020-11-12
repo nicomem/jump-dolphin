@@ -6,8 +6,6 @@
 #include <iostream>
 #include <sstream>
 
-#include "jump/types_json.hpp"
-
 /** Helper to create the method getter. Will only create the function
  * declaration, the body must be added just after the call */
 #define IMPL_GETTER(RET, FUN)                                                  \
@@ -101,7 +99,16 @@ IMPL_GETTER(SaveData::DaysAssets, every_days_assets) {
       // Try to get the assets and add them to the vector
       auto date_str = date_stream.str();
       auto assets = client.get_assets(date_str);
-      map.emplace(std::move(date_str), std::move(assets));
+
+      // Create a compact version of the assets
+      auto compact = std::vector<CompactTypes::Asset>();
+      compact.reserve(assets.size());
+      for (auto &&asset : std::move(assets)) {
+        compact.emplace_back(std::move(asset));
+      }
+
+      // Add it to the map
+      map.emplace(std::move(date_str), std::move(compact));
     } catch (const std::exception &e) {
       // If an error happened, continue with the next day
       ++nb_errors;

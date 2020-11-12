@@ -26,6 +26,8 @@ enum class AssetType {
   STOCK,
 };
 
+enum class CurrencyCode { EUR, GBP, JPY, NOK, SEK, USD };
+
 struct Asset {
   /** Identifiant en base de l'actif */
   std::string id;
@@ -81,8 +83,6 @@ struct portfolio_value {
   std::optional<PortfolioAsset> asset;
   std::optional<PortfolioCurrency> currency;
 };
-
-enum class CurrencyCode { EUR, GBP, JPY, NOK, SEK, USD };
 
 static constexpr std::string_view currency_str(CurrencyCode code) {
   switch (code) {

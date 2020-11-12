@@ -25,20 +25,5 @@ int main(int argc, char *argv[]) {
 
   auto client = JumpClient::build(std::move(username), std::move(password));
 
-  auto set = std::unordered_set<std::string>();
-  auto t1 = std::chrono::system_clock::now();
   auto days_assets = SaveData::every_days_assets(*client, VERBOSE);
-  auto t2 = std::chrono::system_clock::now();
-  std::clog << (t2 - t1).count() << "ns\n";
-  for (const auto &[key, val] : days_assets) {
-    for (const auto &asset : val) {
-      set.emplace(asset.currency);
-    }
-  }
-  auto t3 = std::chrono::system_clock::now();
-  std::clog << (t3 - t2).count() << "ns\n";
-
-  for (const auto &e : set) {
-    std::cout << e << '\n';
-  }
 }
