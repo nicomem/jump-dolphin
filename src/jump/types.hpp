@@ -11,25 +11,35 @@ struct JumpValue {
   std::string type;
 };
 
-enum class AssetType {
+enum class AssetLabel {
   BOND,
   FUND,
   PORTFOLIO,
   STOCK,
 };
 
+enum class AssetType {
+  ETF_FUND,
+  FUND,
+  INDEX,
+  PORTFOLIO,
+  STOCK,
+};
+
+enum class CurrencyCode { EUR, GBP, JPY, NOK, SEK, USD };
+
 struct Asset {
   /** Identifiant en base de l'actif */
   std::string id;
 
   /** Nom de l'actif */
-  AssetType label;
+  AssetLabel label;
 
   /** Currency */
-  std::string currency;
+  CurrencyCode currency;
 
   /** Type d'actifs */
-  std::string type;
+  AssetType type;
 
   /** Dernière valeur de clôture */
   std::optional<std::string> last_close_value;
@@ -73,8 +83,6 @@ struct portfolio_value {
   std::optional<PortfolioAsset> asset;
   std::optional<PortfolioCurrency> currency;
 };
-
-enum class CurrencyCode { EUR, GBP, JPY, NOK, SEK, USD };
 
 static constexpr std::string_view currency_str(CurrencyCode code) {
   switch (code) {
