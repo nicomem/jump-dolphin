@@ -29,6 +29,10 @@ template <class T> static void save(std::string_view fname, T data) {
   std::filesystem::create_directory(root);
 
   auto f = std::ofstream(root / fname);
+  if (!f.good()) {
+    std::cerr << "Could not save to " << root / fname << "\n";
+    return;
+  }
   json j = data;
   f << j << '\n';
 }

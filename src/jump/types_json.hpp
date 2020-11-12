@@ -67,9 +67,18 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Ratio, id, is_benchmark_needed, is_percent,
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PortfolioAsset, asset, quantity)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PortfolioCurrency, currency, amount)
 
+NLOHMANN_JSON_SERIALIZE_ENUM(AssetLabel,
+                             {
+                                 {AssetLabel::BOND, "BOND"},
+                                 {AssetLabel::FUND, "FUND"},
+                                 {AssetLabel::PORTFOLIO, "PORTFOLIO"},
+                                 {AssetLabel::STOCK, "STOCK"},
+                             })
+
 NLOHMANN_JSON_SERIALIZE_ENUM(AssetType, {
-                                            {AssetType::BOND, "BOND"},
+                                            {AssetType::ETF_FUND, "ETF FUND"},
                                             {AssetType::FUND, "FUND"},
+                                            {AssetType::INDEX, "INDEX"},
                                             {AssetType::PORTFOLIO, "PORTFOLIO"},
                                             {AssetType::STOCK, "STOCK"},
                                         })

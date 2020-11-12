@@ -11,9 +11,17 @@ struct JumpValue {
   std::string type;
 };
 
-enum class AssetType {
+enum class AssetLabel {
   BOND,
   FUND,
+  PORTFOLIO,
+  STOCK,
+};
+
+enum class AssetType {
+  ETF_FUND,
+  FUND,
+  INDEX,
   PORTFOLIO,
   STOCK,
 };
@@ -23,13 +31,13 @@ struct Asset {
   std::string id;
 
   /** Nom de l'actif */
-  AssetType label;
+  AssetLabel label;
 
   /** Currency */
-  std::string currency;
+  CurrencyCode currency;
 
   /** Type d'actifs */
-  std::string type;
+  AssetType type;
 
   /** Dernière valeur de clôture */
   std::optional<std::string> last_close_value;
