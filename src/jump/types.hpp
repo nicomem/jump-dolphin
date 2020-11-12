@@ -6,43 +6,43 @@
 #include <vector>
 
 namespace JumpTypes {
-// The API returns dictionaries of the form: { "type": "...", value: "..." }
-// Instead of returning a value with the correct type.
-// And since the JSON lib does not seems to be able to generate the boilerplate
-// on templated structs, we create as many `jump_values` as we want types of it
-struct jump_value_unsigned {
-  unsigned value;
-};
-
-struct jump_value_string {
+struct JumpValue {
   std::string value;
+  std::string type;
 };
 
-struct asset {
+enum class AssetType {
+  BOND,
+  FUND,
+  PORTFOLIO,
+  STOCK,
+};
+
+struct Asset {
   /** Identifiant en base de l'actif */
-  jump_value_string id;
+  std::string id;
 
   /** Nom de l'actif */
-  jump_value_string label;
+  AssetType label;
 
   /** Currency */
-  jump_value_string currency;
+  std::string currency;
 
   /** Type d'actifs */
-  jump_value_string type;
+  std::string type;
 
   /** Dernière valeur de clôture */
-  std::optional<jump_value_string> last_close_value;
+  std::optional<std::string> last_close_value;
 };
 
-struct ratio {
+struct Ratio {
   unsigned id;
   bool is_benchmark_needed;
   bool is_percent;
   std::string name;
 };
 
-struct quote {
+struct Quote {
   float close;
   unsigned coupon;
   std::string date;
@@ -59,43 +59,60 @@ struct quote {
   unsigned volume;
 };
 
-struct currency {
-  std::string code;
-};
-
-struct portfolio_asset {
+struct PortfolioAsset {
   int32_t asset;
   double quantity;
 };
 
-struct portfolio_currency {
+struct PortfolioCurrency {
   std::string currency;
   double amount;
 };
 
 struct portfolio_value {
-  std::optional<portfolio_asset> asset;
-  std::optional<portfolio_currency> currency;
+  std::optional<PortfolioAsset> asset;
+  std::optional<PortfolioCurrency> currency;
 };
 
-enum class dyn_amount_type { back, front };
+enum class CurrencyCode { EUR, GBP, JPY, NOK, SEK, USD };
 
-struct portfolio {
+static constexpr std::string_view currency_str(CurrencyCode code) {
+  switch (code) {
+  case CurrencyCode::EUR:
+    return "EUR";
+  case CurrencyCode::GBP:
+    return "GBP";
+  case CurrencyCode::JPY:
+    return "JPY";
+  case CurrencyCode::NOK:
+    return "NOK";
+  case CurrencyCode::SEK:
+    return "SEK";
+  case CurrencyCode::USD:
+    return "USD";
+  default:
+    return "";
+  }
+}
+
+enum class DynAmountType { back, front };
+
+struct Portfolio {
   /** Nom du portefeuille */
   std::string label;
 
   /** Devise. L'identifiant est le code ISO 4217 de la devise */
-  JumpTypes::currency currency;
+  CurrencyCode currency;
 
   /** Type de portfolio DynAmount */
-  dyn_amount_type type;
+  DynAmountType type;
 
   /** Contenu du portefeuille par date. Les clés de cet objet sont au format
    * 'date' */
   std::unordered_map<std::string, std::vector<portfolio_value>> values;
 };
 
-struct ratio_param {
+struct RatioParam {
   /** Id des ratios à éxécuter */
   std::vector<int32_t> ratio;
 
@@ -118,10 +135,10 @@ struct ratio_param {
  * référençant chaque ratio exécuté avec succès contenant la valeur calculée:
  *
  * <asset_ratio_map>: { "id_actif": <ratio_obj> }
- * <ratio_obj>: { "id_ratio": <jump_value_string> }
+ * <ratio_obj>: { "id_ratio": <JumpValue> }
  */
-struct asset_ratio_map {
-  using ratio_obj = std::unordered_map<std::string, jump_value_string>;
+struct AssetRatioMap {
+  using ratio_obj = std::unordered_map<std::string, JumpValue>;
 
   std::unordered_map<std::string, ratio_obj> value;
 };

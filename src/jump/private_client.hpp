@@ -13,36 +13,35 @@ public:
 
   PrivateJumpClient(std::string &&username, std::string &&password);
 
-  std::vector<JumpTypes::asset>
-  get_assets(OptionalParameter date = std::nullopt,
-             OptionalParameter full_response = std::nullopt,
-             OptionalParameter columns = std::nullopt) override;
+  std::vector<JumpTypes::Asset>
+  get_assets(OptionalParameter date = std::nullopt) override;
 
-  JumpTypes::asset get_asset(RequiredParameter id,
-                             OptionalParameter date = std::nullopt,
-                             OptionalParameter full_response = std::nullopt,
-                             OptionalParameter columns = std::nullopt) override;
+  JumpTypes::Asset get_asset(RequiredParameter id,
+                             OptionalParameter date = std::nullopt) override;
 
-  JumpTypes::jump_value_string
+  JumpTypes::JumpValue
   get_asset_attribute(RequiredParameter id, RequiredParameter attr_name,
-                      OptionalParameter date = std::nullopt,
-                      OptionalParameter full_response = std::nullopt) override;
+                      OptionalParameter date = std::nullopt) override;
 
-  std::vector<JumpTypes::quote>
+  std::vector<JumpTypes::Quote>
   get_asset_quote(RequiredParameter id,
                   OptionalParameter start_date = std::nullopt,
                   OptionalParameter end_date = std::nullopt) override;
 
-  JumpTypes::portfolio get_portfolio_compo(RequiredParameter id) override;
+  JumpTypes::Portfolio get_portfolio_compo(RequiredParameter id) override;
 
   void put_portfolio_compo(RequiredParameter id,
-                           JumpTypes::portfolio &&portfolio) override;
+                           JumpTypes::Portfolio &&portfolio) override;
 
-  std::vector<JumpTypes::ratio> get_ratios() override;
+  std::vector<JumpTypes::Ratio> get_ratios() override;
 
-  JumpTypes::asset_ratio_map
-  compute_ratio(JumpTypes::ratio_param &&ratio_param,
-                OptionalParameter full_response = std::nullopt) override;
+  JumpTypes::AssetRatioMap
+  compute_ratio(JumpTypes::RatioParam &&ratio_param) override;
+
+  double
+  get_currency_change_rate(JumpTypes::CurrencyCode currency_src,
+                           JumpTypes::CurrencyCode currency_dest,
+                           OptionalParameter date = std::nullopt) override;
 
 private:
   constexpr static std::string_view HOST_URL =

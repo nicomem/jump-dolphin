@@ -7,7 +7,7 @@
 using json = nlohmann::json;
 
 namespace JumpTypes {
-// Define helpers to (de)serialize optional fields
+// Define helpers to (de)serialize
 #define TO_JSON(J, V, ID, FIELD)                                               \
   do {                                                                         \
     j[ID] = V.FIELD;                                                           \
@@ -34,49 +34,78 @@ namespace JumpTypes {
     }                                                                          \
   } while (0)
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(jump_value_string, value)
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(jump_value_unsigned, value)
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ratio, id, is_benchmark_needed, is_percent,
+// Helpers for jump_values, to avoid the inner struct
+#define TO_JSON_JVAL(J, V, ID, FIELD)                                          \
+  do {                                                                         \
+    j[ID]["value"] = V.FIELD;                                                  \
+  } while (0)
+
+#define FROM_JSON_JVAL(J, V, ID, FIELD)                                        \
+  do {                                                                         \
+    V.FIELD = J.at(ID).at("value").get<decltype(V.FIELD)>();                   \
+  } while (0)
+
+#define TO_JSON_OPT_JVAL(J, V, ID, FIELD)                                      \
+  do {                                                                         \
+    if (V.FIELD.has_value()) {                                                 \
+      json j_v = *V.FIELD;                                                     \
+      J[ID]["value"] = j_v;                                                    \
+    }                                                                          \
+  } while (0)
+
+#define FROM_JSON_OPT_JVAL(J, V, ID, FIELD)                                    \
+  do {                                                                         \
+    auto it = J.find(ID);                                                      \
+    if (it != J.end()) {                                                       \
+      V.FIELD = it->at("value").get<decltype(V.FIELD)::value_type>();          \
+    }                                                                          \
+  } while (0)
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(JumpValue, value, type)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Ratio, id, is_benchmark_needed, is_percent,
                                    name)
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(currency, code)
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(portfolio_asset, asset, quantity)
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(portfolio_currency, currency, amount)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PortfolioAsset, asset, quantity)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PortfolioCurrency, currency, amount)
 
-inline void to_json(json &j, const portfolio_value &v) {
+NLOHMANN_JSON_SERIALIZE_ENUM(AssetType, {
+                                            {AssetType::BOND, "BOND"},
+                                            {AssetType::FUND, "FUND"},
+                                            {AssetType::PORTFOLIO, "PORTFOLIO"},
+                                            {AssetType::STOCK, "STOCK"},
+                                        })
+
+NLOHMANN_JSON_SERIALIZE_ENUM(
+    CurrencyCode,
+    {
+        {CurrencyCode::EUR, "EUR"},
+        {CurrencyCode::GBP, "GBp"}, // No that is not a mistake (from our part)
+        {CurrencyCode::JPY, "JPY"},
+        {CurrencyCode::NOK, "NOK"},
+        {CurrencyCode::SEK, "SEK"},
+        {CurrencyCode::USD, "USD"},
+    })
+
+NLOHMANN_JSON_SERIALIZE_ENUM(DynAmountType, {{DynAmountType::back, "back"},
+                                             {DynAmountType::front, "front"}})
+
+inline void to_json(json &j, const Asset &v) {
   j = json{};
-  TO_JSON_OPT(j, v, "asset", asset);
-  TO_JSON_OPT(j, v, "currency", currency);
+  TO_JSON_JVAL(j, v, "ASSET_DATABASE_ID", id);
+  TO_JSON_JVAL(j, v, "LABEL", label);
+  TO_JSON_JVAL(j, v, "CURRENCY", currency);
+  TO_JSON_JVAL(j, v, "TYPE", type);
+  TO_JSON_OPT_JVAL(j, v, "LAST_CLOSE_VALUE_IN_CURR", last_close_value);
 }
 
-inline void from_json(const json &j, portfolio_value &v) {
-  FROM_JSON_OPT(j, v, "asset", asset);
-  FROM_JSON_OPT(j, v, "currency", currency);
+inline void from_json(const json &j, Asset &v) {
+  FROM_JSON_JVAL(j, v, "ASSET_DATABASE_ID", id);
+  FROM_JSON_JVAL(j, v, "LABEL", label);
+  FROM_JSON_JVAL(j, v, "CURRENCY", currency);
+  FROM_JSON_JVAL(j, v, "TYPE", type);
+  FROM_JSON_OPT_JVAL(j, v, "LAST_CLOSE_VALUE_IN_CURR", last_close_value);
 }
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(portfolio, currency, label, type, values)
-
-NLOHMANN_JSON_SERIALIZE_ENUM(dyn_amount_type,
-                             {{dyn_amount_type::back, "back"},
-                              {dyn_amount_type::front, "front"}})
-
-inline void to_json(json &j, const asset &v) {
-  j = json{};
-  TO_JSON(j, v, "ASSET_DATABASE_ID", id);
-  TO_JSON(j, v, "LABEL", label);
-  TO_JSON(j, v, "CURRENCY", currency);
-  TO_JSON(j, v, "TYPE", type);
-  TO_JSON_OPT(j, v, "LAST_CLOSE_VALUE_IN_CURR", last_close_value);
-}
-
-inline void from_json(const json &j, asset &v) {
-  FROM_JSON(j, v, "ASSET_DATABASE_ID", id);
-  FROM_JSON(j, v, "LABEL", label);
-  FROM_JSON(j, v, "CURRENCY", currency);
-  FROM_JSON(j, v, "TYPE", type);
-  FROM_JSON_OPT(j, v, "LAST_CLOSE_VALUE_IN_CURR", last_close_value);
-}
-
-inline void to_json(json &j, const quote &v) {
+inline void to_json(json &j, const Quote &v) {
   j = json{};
   TO_JSON(j, v, "close", close);
   TO_JSON(j, v, "coupon", coupon);
@@ -90,7 +119,7 @@ inline void to_json(json &j, const quote &v) {
   TO_JSON(j, v, "volume", volume);
 }
 
-inline void from_json(const json &j, quote &v) {
+inline void from_json(const json &j, Quote &v) {
   FROM_JSON(j, v, "close", close);
   FROM_JSON(j, v, "coupon", coupon);
   FROM_JSON(j, v, "date", date);
@@ -103,7 +132,33 @@ inline void from_json(const json &j, quote &v) {
   FROM_JSON(j, v, "volume", volume);
 }
 
-inline void to_json(json &j, const ratio_param &v) {
+inline void to_json(json &j, const portfolio_value &v) {
+  j = json{};
+  TO_JSON_OPT(j, v, "asset", asset);
+  TO_JSON_OPT(j, v, "currency", currency);
+}
+
+inline void from_json(const json &j, portfolio_value &v) {
+  FROM_JSON_OPT(j, v, "asset", asset);
+  FROM_JSON_OPT(j, v, "currency", currency);
+}
+
+inline void to_json(json &j, const Portfolio &v) {
+  j = json{};
+  TO_JSON(j, v, "label", label);
+  TO_JSON(j.at("currency"), v, "code", currency);
+  TO_JSON(j, v, "type", type);
+  TO_JSON(j, v, "values", values);
+}
+
+inline void from_json(const json &j, Portfolio &v) {
+  FROM_JSON(j, v, "label", label);
+  FROM_JSON(j.at("currency"), v, "code", currency);
+  FROM_JSON(j, v, "type", type);
+  FROM_JSON(j, v, "values", values);
+}
+
+inline void to_json(json &j, const RatioParam &v) {
   j = json{};
   TO_JSON(j, v, "ratio", ratio);
   TO_JSON(j, v, "asset", asset);
@@ -112,7 +167,7 @@ inline void to_json(json &j, const ratio_param &v) {
   TO_JSON_OPT(j, v, "end_date", end_date);
 }
 
-inline void from_json(const json &j, ratio_param &v) {
+inline void from_json(const json &j, RatioParam &v) {
   FROM_JSON(j, v, "ratio", ratio);
   FROM_JSON(j, v, "asset", asset);
   FROM_JSON_OPT(j, v, "benchmark", benchmark);
@@ -120,9 +175,9 @@ inline void from_json(const json &j, ratio_param &v) {
   FROM_JSON_OPT(j, v, "end_date", end_date);
 }
 
-inline void to_json(json &j, const asset_ratio_map &v) { j = v.value; }
+inline void to_json(json &j, const AssetRatioMap &v) { j = v.value; }
 
-inline void from_json(const json &j, asset_ratio_map &v) {
+inline void from_json(const json &j, AssetRatioMap &v) {
   v.value = j.get<decltype(v.value)>();
 }
 } // namespace JumpTypes
