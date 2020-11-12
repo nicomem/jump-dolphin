@@ -14,19 +14,14 @@ public:
   PrivateJumpClient(std::string &&username, std::string &&password);
 
   std::vector<JumpTypes::Asset>
-  get_assets(OptionalParameter date = std::nullopt,
-             OptionalParameter full_response = std::nullopt,
-             OptionalParameter columns = std::nullopt) override;
+  get_assets(OptionalParameter date = std::nullopt) override;
 
   JumpTypes::Asset get_asset(RequiredParameter id,
-                             OptionalParameter date = std::nullopt,
-                             OptionalParameter full_response = std::nullopt,
-                             OptionalParameter columns = std::nullopt) override;
+                             OptionalParameter date = std::nullopt) override;
 
-  JumpTypes::JumpValueString
+  JumpTypes::JumpValue
   get_asset_attribute(RequiredParameter id, RequiredParameter attr_name,
-                      OptionalParameter date = std::nullopt,
-                      OptionalParameter full_response = std::nullopt) override;
+                      OptionalParameter date = std::nullopt) override;
 
   std::vector<JumpTypes::Quote>
   get_asset_quote(RequiredParameter id,
@@ -41,8 +36,7 @@ public:
   std::vector<JumpTypes::Ratio> get_ratios() override;
 
   JumpTypes::AssetRatioMap
-  compute_ratio(JumpTypes::RatioParam &&ratio_param,
-                OptionalParameter full_response = std::nullopt) override;
+  compute_ratio(JumpTypes::RatioParam &&ratio_param) override;
 
   double
   get_currency_change_rate(JumpTypes::CurrencyCode currency_src,

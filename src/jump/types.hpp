@@ -6,12 +6,9 @@
 #include <vector>
 
 namespace JumpTypes {
-// The API returns dictionaries of the form: { "type": "...", value: "..." }
-// Instead of returning a value with the correct type.
-// And since the JSON lib does not seems to be able to generate the boilerplate
-// on templated structs, we create as many `jump_values` as we want types of it
-struct JumpValueString {
+struct JumpValue {
   std::string value;
+  std::string type;
 };
 
 enum class AssetType {
@@ -138,10 +135,10 @@ struct RatioParam {
  * référençant chaque ratio exécuté avec succès contenant la valeur calculée:
  *
  * <asset_ratio_map>: { "id_actif": <ratio_obj> }
- * <ratio_obj>: { "id_ratio": <JumpValueString> }
+ * <ratio_obj>: { "id_ratio": <JumpValue> }
  */
 struct AssetRatioMap {
-  using ratio_obj = std::unordered_map<std::string, JumpValueString>;
+  using ratio_obj = std::unordered_map<std::string, JumpValue>;
 
   std::unordered_map<std::string, ratio_obj> value;
 };

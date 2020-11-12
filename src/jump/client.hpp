@@ -21,16 +21,9 @@ struct JumpClient {
    * \param date Date de valeur au format RFC 3339
    * (https://www.ietf.org/rfc/rfc3339.txt) pour la récupération des données
    * (par défaut : date du jour)
-   * \param full_response Si vrai, la réponse envoyée contient l'intégralité des
-   * informations disponibles du point d'entrée, sinon ne renvoie que le
-   * sous-ensemble d'informations ayant une valeur
-   * \param columns Paramètre de selection des colonnes. Si des valeurs est
-   * envoyées, seul les colonnes dont le nom est inclus seront retournés
    */
   virtual std::vector<JumpTypes::Asset>
-  get_assets(OptionalParameter date = std::nullopt,
-             OptionalParameter full_response = std::nullopt,
-             OptionalParameter columns = std::nullopt) = 0;
+  get_assets(OptionalParameter date = std::nullopt) = 0;
 
   /** GET /asset/{id}
    * Récupération des informations d'un actif spécifique, déterminé par son
@@ -41,16 +34,9 @@ struct JumpClient {
    * \param date Date de valeur au format RFC 3339
    * (https://www.ietf.org/rfc/rfc3339.txt) pour la récupération des données
    * (par défaut : date du jour)
-   * \param full_response Si vrai, la réponse envoyée contient l'intégralité des
-   * informations disponibles du point d'entrée, sinon ne renvoie que le
-   * sous-ensemble d'informations ayant une valeur
-   * \param columns Paramètre de selection des colonnes. Si des valeurs est
-   * envoyées, seul les colonnes dont le nom est inclus seront retournés
    */
-  virtual JumpTypes::Asset
-  get_asset(RequiredParameter id, OptionalParameter date = std::nullopt,
-            OptionalParameter full_response = std::nullopt,
-            OptionalParameter columns = std::nullopt) = 0;
+  virtual JumpTypes::Asset get_asset(RequiredParameter id,
+                                     OptionalParameter date = std::nullopt) = 0;
 
   /** GET /asset/{id}/attribute/{attr_name}
    * Récupère une information spécifique d'un actif déterminé par son
@@ -63,14 +49,10 @@ struct JumpClient {
    * \param date Date de valeur au format RFC 3339
    * (https://www.ietf.org/rfc/rfc3339.txt) pour la récupération des données
    * (par défaut : date du jour)
-   * \param full_response Si vrai, la réponse envoyée contient l'intégralité des
-   * informations disponibles du point d'entrée, sinon ne renvoie que le
-   * sous-ensemble d'informations ayant une valeur
    */
-  virtual JumpTypes::JumpValueString
+  virtual JumpTypes::JumpValue
   get_asset_attribute(RequiredParameter id, RequiredParameter attr_name,
-                      OptionalParameter date = std::nullopt,
-                      OptionalParameter full_response = std::nullopt) = 0;
+                      OptionalParameter date = std::nullopt) = 0;
 
   /** GET /asset/{id}/quote
    * Récupèration des cotations d'un actif triées par date
@@ -117,13 +99,9 @@ struct JumpClient {
    *
    * \param ratio_param Paramètre d'exécution contenant une liste d'actifs, une
    * liste de ratios, une période, une fréquence ainsi qu'un actif benchmark
-   * \param full_response Si vrai, la réponse envoyée contient l'intégralité des
-   * informations disponibles du point d'entrée, sinon ne renvoie que le
-   * sous-ensemble d'informations ayant une valeur
    */
   virtual JumpTypes::AssetRatioMap
-  compute_ratio(JumpTypes::RatioParam &&ratio_param,
-                OptionalParameter full_response = std::nullopt) = 0;
+  compute_ratio(JumpTypes::RatioParam &&ratio_param) = 0;
 
   /** GET /currency/rate/<currency_src>/to/<currency_dest>
    * Get the currency change rate from one type to another

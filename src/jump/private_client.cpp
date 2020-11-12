@@ -6,6 +6,8 @@
 #include <cmath>
 #include <tuple>
 
+#define OPT_STR(S) std::make_optional(std::string(S))
+
 using ParamOptKV =
     std::tuple<std::string_view, PrivateJumpClient::OptionalParameter>;
 
@@ -45,15 +47,17 @@ static cpr::Url build_url(fmt::memory_buffer &buffer,
   return cpr::Url{buffer.data(), buffer.size()};
 }
 
+#include <iostream>
 std::vector<JumpTypes::Asset>
-PrivateJumpClient::get_assets(OptionalParameter date,
-                              OptionalParameter full_response,
-                              OptionalParameter columns) {
+PrivateJumpClient::get_assets(OptionalParameter date) {
   auto url = build_url(cache_url_, "{}/asset", HOST_URL);
   auto params = build_parameters({
       std::tuple{"date", date},
-      std::tuple{"fullResponse", full_response},
-      std::tuple{"columns", columns},
+      std::tuple{"columns", OPT_STR("ASSET_DATABASE_ID")},
+      std::tuple{"columns", OPT_STR("LABEL")},
+      std::tuple{"columns", OPT_STR("LAST_CLOSE_VALUE_IN_CURR")},
+      std::tuple{"columns", OPT_STR("TYPE")},
+      std::tuple{"columns", OPT_STR("CURRENCY")},
   });
 
   session_.SetUrl(url);
@@ -64,14 +68,16 @@ PrivateJumpClient::get_assets(OptionalParameter date,
 }
 
 JumpTypes::Asset PrivateJumpClient::get_asset(RequiredParameter id,
-                                              OptionalParameter date,
-                                              OptionalParameter full_response,
-                                              OptionalParameter columns) {
+                                              OptionalParameter date) {
   auto url = build_url(cache_url_, "{}/asset/{}", HOST_URL, id);
   auto params = build_parameters({
       std::tuple{"date", date},
-      std::tuple{"fullResponse", full_response},
-      std::tuple{"columns", columns},
+      // std::tuple{"fullResponse", full_response},
+      std::tuple{"columns", OPT_STR("ASSET_DATABASE_ID")},
+      std::tuple{"columns", OPT_STR("LABEL")},
+      std::tuple{"columns", OPT_STR("LAST_CLOSE_VALUE_IN_CURR")},
+      std::tuple{"columns", OPT_STR("TYPE")},
+      std::tuple{"columns", OPT_STR("CURRENCY")},
   });
 
   session_.SetUrl(url);
@@ -81,21 +87,19 @@ JumpTypes::Asset PrivateJumpClient::get_asset(RequiredParameter id,
   return j.get<JumpTypes::Asset>();
 }
 
-JumpTypes::JumpValueString PrivateJumpClient::get_asset_attribute(
-    RequiredParameter id, RequiredParameter attr_name, OptionalParameter date,
-    OptionalParameter full_response) {
+JumpTypes::JumpValue PrivateJumpClient::get_asset_attribute(
+    RequiredParameter id, RequiredParameter attr_name, OptionalParameter date) {
   auto url = build_url(cache_url_, "{}/asset/{}/attribute/{}", HOST_URL, id,
                        attr_name);
   auto params = build_parameters({
       std::tuple{"date", date},
-      std::tuple{"fullResponse", full_response},
   });
 
   session_.SetUrl(url);
   session_.SetParameters(std::move(params));
 
   auto j = json::parse(session_.Get().text);
-  return j.get<JumpTypes::JumpValueString>();
+  return j.get<JumpTypes::JumpValue>();
 }
 
 std::vector<JumpTypes::Quote>
@@ -160,10 +164,9 @@ std::vector<JumpTypes::Ratio> PrivateJumpClient::get_ratios() {
 }
 
 JumpTypes::AssetRatioMap
-PrivateJumpClient::compute_ratio(JumpTypes::RatioParam &&ratio_param,
-                                 OptionalParameter full_response) {
+PrivateJumpClient::compute_ratio(JumpTypes::RatioParam &&ratio_param) {
   auto url = build_url(cache_url_, "{}/ratio/invoke", HOST_URL);
-  auto params = build_parameters({std::tuple{"fullResponse", full_response}});
+  auto params = cpr::Parameters{};
 
   session_.SetUrl(url);
   session_.SetParameters(std::move(params));

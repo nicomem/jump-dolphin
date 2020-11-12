@@ -7,7 +7,7 @@
 using json = nlohmann::json;
 
 namespace JumpTypes {
-// Define helpers to (de)serialize optional fields
+// Define helpers to (de)serialize
 #define TO_JSON(J, V, ID, FIELD)                                               \
   do {                                                                         \
     j[ID] = V.FIELD;                                                           \
@@ -61,7 +61,7 @@ namespace JumpTypes {
     }                                                                          \
   } while (0)
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(JumpValueString, value)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(JumpValue, value, type)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Ratio, id, is_benchmark_needed, is_percent,
                                    name)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PortfolioAsset, asset, quantity)
