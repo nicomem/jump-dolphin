@@ -1,5 +1,7 @@
 #include "types.hpp"
 
+#include "types_json.hpp"
+
 #include <sstream>
 
 #include <fmt/format.h>
@@ -104,7 +106,7 @@ struct Asset {
   AssetType type;
 
   /** Dernière valeur de clôture */
-  std::optional<std::string> last_close_value;
+  std::optional<JumpTypes::AssetValue> last_close_value;
 
   Asset() = default;
   Asset(JumpTypes::Asset &&other)
@@ -113,9 +115,13 @@ struct Asset {
 };
 
 inline void to_json(json &j, const Asset &v) {
-  auto j_str = json::string_t(
-      fmt::format("000{}|{}", v.id,
-                  (v.last_close_value.has_value() ? *v.last_close_value : "")));
+  auto val = std::string();
+  if (v.last_close_value) {
+    json j_val = *v.last_close_value;
+    val = j_val.dump();
+  }
+
+  auto j_str = json::string_t(fmt::format("000{}|{}", v.id, val));
 
   j_str[0] = v.label.value;
   j_str[1] = v.type.value;
@@ -135,7 +141,15 @@ inline void from_json(const json &j, Asset &v) {
   v.id = token;
 
   token = stream.str();
-  v.last_close_value =
-      (token.empty() ? std::nullopt : std::make_optional(std::move(token)));
+
+  if (token.empty()) {
+    v.last_close_value = std::nullopt;
+  } else {
+    json j_val = token;
+    JumpTypes::AssetValue val;
+    from_json(j_val, val);
+
+    v.last_close_value = val;
+  }
 }
 } // namespace CompactTypes

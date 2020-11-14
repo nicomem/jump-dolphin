@@ -2,6 +2,8 @@
 
 #include "types.hpp"
 
+#include <sstream>
+
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
@@ -96,6 +98,30 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
 
 NLOHMANN_JSON_SERIALIZE_ENUM(DynAmountType, {{DynAmountType::back, "back"},
                                              {DynAmountType::front, "front"}})
+
+inline void to_json(json &j, const AssetValue &v) {
+  auto ss = std::stringstream("");
+  ss.imbue(std::locale("fr_FR.UTF-8"));
+  ss << std::fixed << v.value << ' ';
+
+  json j_curr = v.currency;
+  ss << j_curr;
+
+  j = json{{"type", "string"}, {"value", ss.str()}};
+}
+
+inline void from_json(const json &j, AssetValue &v) {
+  auto stream = std::istringstream(j.get<std::string>());
+
+  std::string token;
+  std::getline(stream, token, ' ');
+
+  std::replace(token.begin(), token.end(), ',', '.');
+  v.value = std::stod(token);
+
+  json j_curr = stream.str();
+  from_json(j_curr, v.currency);
+}
 
 inline void to_json(json &j, const Asset &v) {
   j = json{};

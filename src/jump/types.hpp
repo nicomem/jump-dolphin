@@ -28,6 +28,14 @@ enum class AssetType {
 
 enum class CurrencyCode { EUR, GBP, JPY, NOK, SEK, USD };
 
+struct AssetValue {
+  /** Value of a share of the asset */
+  double value;
+
+  /** Currency of the asset share */
+  CurrencyCode currency;
+};
+
 struct Asset {
   /** Identifiant en base de l'actif */
   std::string id;
@@ -42,7 +50,7 @@ struct Asset {
   AssetType type;
 
   /** Dernière valeur de clôture */
-  std::optional<std::string> last_close_value;
+  std::optional<AssetValue> last_close_value;
 };
 
 struct Ratio {
