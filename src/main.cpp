@@ -30,12 +30,15 @@ int main(int argc, char *argv[]) {
       SaveData::start_date_currency_rate(days_rates, *client, VERBOSE);
   auto end_rates =
       SaveData::end_date_currency_rate(days_rates, *client, VERBOSE);
-  days_rates = std::nullopt;
 
   std::optional<SaveData::DaysAssets> days_assets = std::nullopt;
   auto start_assets =
       SaveData::assets_start_values(days_assets, start_rates, *client, VERBOSE);
   auto end_assets =
       SaveData::assets_end_values(days_assets, end_rates, *client, VERBOSE);
+  auto cov_matrix =
+      SaveData::covariance_matrix(days_assets, days_rates, *client, VERBOSE);
+
   days_assets = std::nullopt;
+  days_rates = std::nullopt;
 }

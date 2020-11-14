@@ -57,6 +57,25 @@
     return load_or_download<RET>(fname, getter);                               \
   }
 
+#define IMPL_GETTER3(RET, FUN)                                                 \
+  static RET FUN##_getter(                                                     \
+      std::optional<SaveData::DaysAssets> &assets,                             \
+      std::optional<finmath::days_currency_rates_t> &rates,                    \
+      JumpClient &client, bool verbose)
+
+/** Helper to automatically create load or get and save methods.
+ * A (FUN)_getter must exists */
+#define IMPL_METHOD3(RET, FUN)                                                 \
+  RET SaveData::FUN(std::optional<SaveData::DaysAssets> &assets,               \
+                    std::optional<finmath::days_currency_rates_t> &rates,      \
+                    JumpClient &client, bool verbose) {                        \
+    constexpr std::string_view fname = #FUN ".json";                           \
+    auto getter = [&assets, &rates, &client, verbose]() {                      \
+      return FUN##_getter(assets, rates, client, verbose);                     \
+    };                                                                         \
+    return load_or_download<RET>(fname, getter);                               \
+  }
+
 template <class T> static void save(std::string_view fname, T data) {
   static auto root = std::filesystem::current_path() / "data";
   std::filesystem::create_directory(root);
@@ -219,16 +238,68 @@ IMPL_GETTER2(finmath::assets_day_values_t, SaveData::DaysAssets,
 IMPL_METHOD2(finmath::assets_day_values_t, SaveData::DaysAssets,
              assets_end_values)
 
-IMPL_OPT_GETTER(finmath::covariance_matrix_t, SaveData::DaysAssets,
-                covariance_matrix) {
-  // TODO
-  (void)client;
-  (void)verbose;
-  (void)opt_data;
-  return finmath::covariance_matrix_t();
+IMPL_GETTER3(finmath::covariance_matrix_t, covariance_matrix) {
+  if (!assets) {
+    assets = SaveData::every_days_assets(client, verbose);
+  }
+
+  if (!rates) {
+    rates = SaveData::days_currency_rates(client, verbose);
+  }
+
+  auto asset_size = (*assets)["2016-06-01"].size();
+
+  auto cov_matrix = finmath::covariance_matrix_t();
+  cov_matrix.reserve(asset_size);
+
+  // Compute mean for each asset
+  auto assets_mean = std::vector<double>();
+  assets_mean.reserve(asset_size);
+  for (auto i_asset = 0u; i_asset < asset_size; ++i_asset) {
+    double sum = 0;
+    double last_val = 0;
+    auto asset_id = std::string();
+    for (const auto &[date, day_assets] : *assets) {
+      asset_id = day_assets[i_asset].id;
+      const auto &val = day_assets[i_asset].last_close_value;
+      double v = (val ? val->value : last_val);
+
+      sum += v;
+      last_val = v;
+    }
+    std::cout << asset_id << ' ' << sum / assets->size() << std::endl;
+    assets_mean.emplace_back(sum / assets->size());
+  }
+
+  // Compute cov matrix
+  for (auto i_asset = 0u; i_asset < asset_size; ++i_asset) {
+    auto &cov_vec = cov_matrix.emplace_back();
+    cov_vec.reserve(asset_size);
+
+    for (auto j_asset = 0u; j_asset < asset_size; ++j_asset) {
+      double cov = 0;
+
+      double last_val1 = 0;
+      double last_val2 = 0;
+      for (const auto &[date, day_assets] : *assets) {
+        last_val1 = (day_assets[i_asset].last_close_value
+                         ? day_assets[i_asset].last_close_value->value
+                         : last_val1);
+        last_val2 = (day_assets[j_asset].last_close_value
+                         ? day_assets[j_asset].last_close_value->value
+                         : last_val2);
+
+        cov += (last_val1 - assets_mean[i_asset]) *
+               (last_val2 - assets_mean[j_asset]);
+      }
+
+      cov_vec.emplace_back(cov / assets->size());
+    }
+  }
+
+  return cov_matrix;
 }
-IMPL_OPT_METHOD(finmath::covariance_matrix_t, SaveData::DaysAssets,
-                covariance_matrix)
+IMPL_METHOD3(finmath::covariance_matrix_t, covariance_matrix)
 
 IMPL_GETTER(finmath::days_currency_rates_t, days_currency_rates) {
   using namespace date;

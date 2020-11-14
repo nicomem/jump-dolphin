@@ -37,8 +37,9 @@ struct SaveData {
    * present.
    */
   static finmath::covariance_matrix_t
-  covariance_matrix(std::optional<DaysAssets> &days_assets, JumpClient &client,
-                    bool verbose = false);
+  covariance_matrix(std::optional<DaysAssets> &days_assets,
+                    std::optional<finmath::days_currency_rates_t> &days_rates,
+                    JumpClient &client, bool verbose = false);
 
   /** Get every rates for every currencies -- from currency to EUR -- for the
    * invesment period

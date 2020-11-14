@@ -56,7 +56,7 @@ struct CurrencyCode {
       TOJUMPSWITCH(SEK);
       TOJUMPSWITCH(USD);
     default:
-      return Other::EUR
+      return Other::EUR;
     }
   }
 };
