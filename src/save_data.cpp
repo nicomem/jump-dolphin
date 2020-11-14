@@ -1,12 +1,12 @@
 #include "save_data.hpp"
 
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
 #include <sstream>
 #include <thread>
-#include <cmath>
 
 /** Helper to create the method getter. Will only create the function
  * declaration, the body must be added just after the call */
@@ -240,8 +240,8 @@ IMPL_METHOD2(finmath::assets_day_values_t, SaveData::DaysAssets,
              assets_end_values)
 
 static double get_mean(unsigned int i_asset, SaveData::DaysAssets &assets) {
-  //mean
-  double  last_val = 0;
+  // mean
+  double last_val = 0;
   double sum = 0;
   for (const auto &[date, day_assets] : assets) {
     const auto &val = day_assets[i_asset].last_close_value;
@@ -254,9 +254,9 @@ static double get_mean(unsigned int i_asset, SaveData::DaysAssets &assets) {
   return mean;
 }
 
-static double get_cov(unsigned int i_asset, unsigned int j_asset, SaveData::DaysAssets &assets)
-{
-  //get mean
+static double get_cov(unsigned int i_asset, unsigned int j_asset,
+                      SaveData::DaysAssets &assets) {
+  // get mean
   auto mean_i = get_mean(i_asset, assets);
   auto mean_j = get_mean(j_asset, assets);
 
@@ -266,14 +266,13 @@ static double get_cov(unsigned int i_asset, unsigned int j_asset, SaveData::Days
   double last_val2 = 0;
   for (const auto &[date, day_assets] : assets) {
     last_val1 = (day_assets[i_asset].last_close_value
-                    ? day_assets[i_asset].last_close_value->value
-                    : last_val1);
+                     ? day_assets[i_asset].last_close_value->value
+                     : last_val1);
     last_val2 = (day_assets[j_asset].last_close_value
-                    ? day_assets[j_asset].last_close_value->value
-                    : last_val2);
+                     ? day_assets[j_asset].last_close_value->value
+                     : last_val2);
 
-    cov += (last_val1 - mean_i) *
-          (last_val2 - mean_j);
+    cov += (last_val1 - mean_i) * (last_val2 - mean_j);
   }
   return cov;
 }
@@ -292,17 +291,17 @@ IMPL_GETTER3(finmath::covariance_matrix_t, covariance_matrix) {
   auto cov_matrix = finmath::covariance_matrix_t();
   cov_matrix.reserve(asset_size);
 
-  //get volatilities
+  // get volatilities
   auto ratios = std::vector<int32_t>();
   ratios.emplace_back(10);
-  
+
   auto assets_id = std::vector<int32_t>();
-  const auto& first_day_assets = (*assets)["2016-06-01"];
+  const auto &first_day_assets = (*assets)["2016-06-01"];
   for (auto i_asset = 0u; i_asset < asset_size; ++i_asset) {
     auto asset_id = first_day_assets[i_asset].id;
     assets_id.emplace_back(std::stoi(asset_id));
   }
-  
+
   JumpTypes::RatioParam params = JumpTypes::RatioParam();
   params.ratio = ratios;
   params.asset = assets_id;
@@ -311,93 +310,51 @@ IMPL_GETTER3(finmath::covariance_matrix_t, covariance_matrix) {
   params.end_date = std::string("2020-09-30");
 
   auto ratios_volatilities = client.compute_ratio(std::move(params));
-
-  //correlation
+  auto vars = std::vector<double>();
+  vars.reserve(asset_size);
   for (auto i_asset = 0u; i_asset < asset_size; ++i_asset) {
-
-    double var_i = get_cov(i_asset, i_asset, *assets);
-    auto& cov_vec = cov_matrix.emplace_back();
-
-    for (auto j_asset = 0u; j_asset < asset_size; ++j_asset) {
-
-        double cov = get_cov(i_asset, j_asset, *assets);
-        double var_j = get_cov(j_asset, j_asset, *assets);
-
-        double correlation = cov / std::sqrt(var_i * var_j);
-
-        double vol_i = 0;
-        double vol_j = 0;
-
-        //std::cout << "i: " << ratios_volatilities.value[first_day_assets[i_asset].id]["10"].value << std::endl;
-        //std::cout << "j: " << ratios_volatilities.value[first_day_assets[j_asset].id]["10"].value << std::endl;
-
-        try {
-
-          auto vol_str_i = ratios_volatilities.value[first_day_assets[i_asset].id]["10"].value;
-          std::replace(vol_str_i.begin(), vol_str_i.end(), ',', '.');
-          vol_i = std::stod(vol_str_i);
-
-          auto vol_str_j = ratios_volatilities.value[first_day_assets[j_asset].id]["10"].value;
-          std::replace(vol_str_j.begin(), vol_str_j.end(), ',', '.');
-          vol_j = std::stod(vol_str_j);
-        }
-        catch (std::exception& e)
-        {
-          cov_vec.emplace_back(0);
-          continue;
-        }
-        
-        double result = correlation * vol_i * vol_j;
-
-        cov_vec.emplace_back(result);
-    }
-  }
-   return cov_matrix;
-
-  /*// Compute mean for each asset
-  auto assets_mean = std::vector<double>();
-  assets_mean.reserve(asset_size);
-  for (auto i_asset = 0u; i_asset < asset_size; ++i_asset) {
-    double sum = 0;
-    double last_val = 0;
-    auto asset_id = std::string();
-    for (const auto &[date, day_assets] : *assets) {
-      asset_id = day_assets[i_asset].id;
-      const auto &val = day_assets[i_asset].last_close_value;
-      double v = (val ? val->value : last_val);
-
-      sum += v;
-      last_val = v;
-    }
-    std::cout << asset_id << ' ' << sum / assets->size() << std::endl;
-    assets_mean.emplace_back(sum / assets->size());
+    vars.emplace_back(get_cov(i_asset, i_asset, *assets));
   }
 
-  // Compute cov matrix
+  // correlation
   for (auto i_asset = 0u; i_asset < asset_size; ++i_asset) {
     auto &cov_vec = cov_matrix.emplace_back();
-    cov_vec.reserve(asset_size);
+    double var_i = vars[i_asset];
+
+    if (verbose) {
+      std::clog << "Correlation: " << i_asset << '/' << asset_size << '\n';
+    }
 
     for (auto j_asset = 0u; j_asset < asset_size; ++j_asset) {
-      double cov = 0;
+      double cov = get_cov(i_asset, j_asset, *assets);
+      double var_j = vars[j_asset];
 
-      double last_val1 = 0;
-      double last_val2 = 0;
-      for (const auto &[date, day_assets] : *assets) {
-        last_val1 = (day_assets[i_asset].last_close_value
-                         ? day_assets[i_asset].last_close_value->value
-                         : last_val1);
-        last_val2 = (day_assets[j_asset].last_close_value
-                         ? day_assets[j_asset].last_close_value->value
-                         : last_val2);
+      double correlation = cov / std::sqrt(var_i * var_j);
 
-        cov += (last_val1 - assets_mean[i_asset]) *
-               (last_val2 - assets_mean[j_asset]);
+      double vol_i = 0;
+      double vol_j = 0;
+
+      try {
+        auto vol_str_i =
+            ratios_volatilities.value[first_day_assets[i_asset].id]["10"].value;
+        std::replace(vol_str_i.begin(), vol_str_i.end(), ',', '.');
+        vol_i = std::stod(vol_str_i);
+
+        auto vol_str_j =
+            ratios_volatilities.value[first_day_assets[j_asset].id]["10"].value;
+        std::replace(vol_str_j.begin(), vol_str_j.end(), ',', '.');
+        vol_j = std::stod(vol_str_j);
+      } catch (std::exception &e) {
+        cov_vec.emplace_back(0);
+        continue;
       }
 
-      cov_vec.emplace_back(cov / assets->size());
+      double result = correlation * std::sqrt(vol_i * vol_j);
+
+      cov_vec.emplace_back(result);
     }
-  }*/
+  }
+  return cov_matrix;
 }
 IMPL_METHOD3(finmath::covariance_matrix_t, covariance_matrix)
 
