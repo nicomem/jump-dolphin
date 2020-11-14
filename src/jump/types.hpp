@@ -163,6 +163,9 @@ struct Portfolio {
 };
 
 struct RatioParam {
+  RatioParam() = default;
+  RatioParam(RatioParam&&) = default;
+
   /** Id des ratios à éxécuter */
   std::vector<int32_t> ratio;
 
@@ -175,7 +178,7 @@ struct RatioParam {
 
   /** Date de debut pour le ratio, Peut être nécessaire selon les ratios
    * end_date */
-  std::optional<std::string> date;
+  std::optional<std::string> start_date;
 
   /** Date de fin pour le ratio, Peut être nécessaire selon les ratios */
   std::optional<std::string> end_date;

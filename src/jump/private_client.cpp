@@ -173,15 +173,19 @@ PrivateJumpClient::compute_ratio(JumpTypes::RatioParam &&ratio_param) {
 
   // Build and set the body
   json j_body = ratio_param;
-  session_.SetBody({j_body});
+
+  cpr::Body body = cpr::Body(std::move(j_body.dump()));
+  session_.SetBody(body);
 
   // Send the request
   auto j = json::parse(session_.Post().text);
 
   // Clear the body
-  session_.SetBody({});
+  session_.SetBody(cpr::Body());
 
-  return j.get<JumpTypes::AssetRatioMap>();
+  auto res = j.get<JumpTypes::AssetRatioMap>();
+
+  return res;
 }
 
 double PrivateJumpClient::get_currency_change_rate(

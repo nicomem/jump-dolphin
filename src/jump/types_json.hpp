@@ -205,7 +205,7 @@ inline void to_json(json &j, const RatioParam &v) {
   TO_JSON(j, v, "ratio", ratio);
   TO_JSON(j, v, "asset", asset);
   TO_JSON_OPT(j, v, "benchmark", benchmark);
-  TO_JSON_OPT(j, v, "date", date);
+  TO_JSON_OPT(j, v, "start_date", start_date);
   TO_JSON_OPT(j, v, "end_date", end_date);
 }
 
@@ -213,7 +213,7 @@ inline void from_json(const json &j, RatioParam &v) {
   FROM_JSON(j, v, "ratio", ratio);
   FROM_JSON(j, v, "asset", asset);
   FROM_JSON_OPT(j, v, "benchmark", benchmark);
-  FROM_JSON_OPT(j, v, "date", date);
+  FROM_JSON_OPT(j, v, "start_date", start_date);
   FROM_JSON_OPT(j, v, "end_date", end_date);
 }
 
