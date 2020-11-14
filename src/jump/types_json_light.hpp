@@ -1,8 +1,8 @@
 #include "types.hpp"
 
-#include "types_json.hpp"
-
 #include <sstream>
+
+#include "types_json.hpp"
 
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
@@ -91,6 +91,43 @@ struct AssetType {
   }
 };
 
+struct AssetValue {
+  /** Value of a share of the asset */
+  double value;
+
+  /** Currency of the asset share */
+  CurrencyCode currency;
+
+  AssetValue() = default;
+  AssetValue(JumpTypes::AssetValue &&other)
+      : CTORMOVE(value), CTORMOVE(currency) {}
+};
+
+inline void to_json(json &j, const AssetValue &v) {
+  auto ss = std::stringstream("");
+
+  ss << (int)v.value;
+
+  // Create str representation of double with a comma instead of dot
+  auto v_str = fmt::format("{}", v.value);
+  auto dot = v_str.find('.');
+  ss << ',' << v_str.substr(dot + 1) << ' ' << v.currency.value;
+
+  j = json::string_t(ss.str());
+}
+
+inline void from_json(const json &j, AssetValue &v) {
+  auto stream = std::istringstream(j.get<std::string>());
+
+  std::string token;
+  std::getline(stream, token, ' ');
+
+  std::replace(token.begin(), token.end(), ',', '.');
+  v.value = std::stod(token);
+
+  v.currency = CurrencyCode(stream.get());
+}
+
 /** Version of an asset that have a more compact serialization */
 struct Asset {
   /** Identifiant en base de l'actif */
@@ -106,7 +143,7 @@ struct Asset {
   AssetType type;
 
   /** Dernière valeur de clôture */
-  std::optional<JumpTypes::AssetValue> last_close_value;
+  std::optional<AssetValue> last_close_value;
 
   Asset() = default;
   Asset(JumpTypes::Asset &&other)
@@ -119,6 +156,9 @@ inline void to_json(json &j, const Asset &v) {
   if (v.last_close_value) {
     json j_val = *v.last_close_value;
     val = j_val.dump();
+
+    // Remove quotes around json str
+    val = val.substr(1, val.size() - 2);
   }
 
   auto j_str = json::string_t(fmt::format("000{}|{}", v.id, val));
@@ -140,13 +180,12 @@ inline void from_json(const json &j, Asset &v) {
   std::getline(stream, token, '|');
   v.id = token;
 
-  token = stream.str();
-
+  std::getline(stream, token, '|');
   if (token.empty()) {
     v.last_close_value = std::nullopt;
   } else {
     json j_val = token;
-    JumpTypes::AssetValue val;
+    AssetValue val;
     from_json(j_val, val);
 
     v.last_close_value = val;

@@ -4,6 +4,7 @@
 
 #include <sstream>
 
+#include <fmt/format.h>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
@@ -101,17 +102,22 @@ NLOHMANN_JSON_SERIALIZE_ENUM(DynAmountType, {{DynAmountType::back, "back"},
 
 inline void to_json(json &j, const AssetValue &v) {
   auto ss = std::stringstream("");
-  ss.imbue(std::locale("fr_FR.UTF-8"));
-  ss << std::fixed << v.value << ' ';
+
+  ss << (int)v.value;
+
+  double n = v.value - (int)v.value;
+  if (n > 1e-8) {
+    ss << ',' << fmt::format("{}", n).substr(2);
+  }
 
   json j_curr = v.currency;
-  ss << j_curr;
+  ss << ' ' << j_curr;
 
   j = json{{"type", "string"}, {"value", ss.str()}};
 }
 
 inline void from_json(const json &j, AssetValue &v) {
-  auto stream = std::istringstream(j.get<std::string>());
+  auto stream = std::istringstream(j.at("value").get<std::string>());
 
   std::string token;
   std::getline(stream, token, ' ');
@@ -119,7 +125,8 @@ inline void from_json(const json &j, AssetValue &v) {
   std::replace(token.begin(), token.end(), ',', '.');
   v.value = std::stod(token);
 
-  json j_curr = stream.str();
+  std::getline(stream, token, ' ');
+  json j_curr = token;
   from_json(j_curr, v.currency);
 }
 
@@ -129,7 +136,7 @@ inline void to_json(json &j, const Asset &v) {
   TO_JSON_JVAL(j, v, "LABEL", label);
   TO_JSON_JVAL(j, v, "CURRENCY", currency);
   TO_JSON_JVAL(j, v, "TYPE", type);
-  TO_JSON_OPT_JVAL(j, v, "LAST_CLOSE_VALUE_IN_CURR", last_close_value);
+  TO_JSON_OPT(j, v, "LAST_CLOSE_VALUE_IN_CURR", last_close_value);
 }
 
 inline void from_json(const json &j, Asset &v) {
@@ -137,7 +144,7 @@ inline void from_json(const json &j, Asset &v) {
   FROM_JSON_JVAL(j, v, "LABEL", label);
   FROM_JSON_JVAL(j, v, "CURRENCY", currency);
   FROM_JSON_JVAL(j, v, "TYPE", type);
-  FROM_JSON_OPT_JVAL(j, v, "LAST_CLOSE_VALUE_IN_CURR", last_close_value);
+  FROM_JSON_OPT(j, v, "LAST_CLOSE_VALUE_IN_CURR", last_close_value);
 }
 
 inline void to_json(json &j, const Quote &v) {
