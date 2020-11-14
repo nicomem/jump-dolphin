@@ -6,6 +6,8 @@
 #include <cmath>
 #include <tuple>
 
+#include <iostream>
+
 #define OPT_STR(S) std::make_optional(std::string(S))
 
 using ParamOptKV =
@@ -115,8 +117,14 @@ PrivateJumpClient::get_asset_quote(RequiredParameter id,
   session_.SetUrl(url);
   session_.SetParameters(std::move(params));
 
-  auto j = json::parse(session_.Get().text);
-  return j.get<std::vector<JumpTypes::Quote>>();
+  auto t = session_.Get().text;
+  auto j = json::parse(t);
+  try {
+    auto r = j.get<std::vector<JumpTypes::Quote>>();
+    return r;
+  } catch (const std::exception &e) {
+    return std::vector<JumpTypes::Quote>();
+  }
 }
 
 JumpTypes::Portfolio

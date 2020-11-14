@@ -58,4 +58,10 @@ struct SaveData {
   static finmath::day_currency_rates_t
   end_date_currency_rate(std::optional<finmath::days_currency_rates_t> &days,
                          JumpClient &client, bool verbose = false);
+
+  /** Get the number of shares that can be bought on the start date for each
+   * asset */
+  static std::vector<finmath::nb_shares_t>
+  start_date_assets_volumes(const DaysAssets &days_assets, JumpClient &client,
+                            bool verbose = false);
 };

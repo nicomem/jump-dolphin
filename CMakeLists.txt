@@ -70,6 +70,8 @@ set(SOURCES
     finmath.hpp
     save_data.cpp
     save_data.hpp
+    tree.cpp
+    tree.hpp
 
     jump/client.hpp
     jump/private_client.cpp

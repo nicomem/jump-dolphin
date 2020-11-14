@@ -5,6 +5,7 @@
 #include "jump/client.hpp"
 #include "jump/types_json.hpp"
 #include "save_data.hpp"
+#include "tree.hpp"
 
 #include <chrono>
 #include <unordered_set>
@@ -64,15 +65,38 @@ int main(int argc, char *argv[]) {
   days_assets = filter_assets(*days_assets);
 
   std::clog << "assets_start_values...\n";
-  auto start_assets =
+  auto start_values =
       SaveData::assets_start_values(days_assets, start_rates, *client, VERBOSE);
   std::clog << "assets_end_values...\n";
-  auto end_assets =
+  auto end_values =
       SaveData::assets_end_values(days_assets, end_rates, *client, VERBOSE);
   std::clog << "covariance_matrix...\n";
   auto cov_matrix =
       SaveData::covariance_matrix(days_assets, days_rates, *client, VERBOSE);
 
+  std::clog << "start_date_assets_volumes...\n";
+  auto nb_shares =
+      SaveData::start_date_assets_volumes(*days_assets, *client, VERBOSE);
+
+  // std::cout << (*days_assets)["2016-06-01"][259].id << '\n';
+  // return 0;
+
   days_assets = std::nullopt;
   days_rates = std::nullopt;
+
+  auto trucs = TrucsInteressants{
+      start_rates, end_rates, start_values, end_values, cov_matrix, nb_shares,
+  };
+
+  auto compo = compo_t();
+
+  std::clog << "max_compo_tree\n";
+  auto [best_compo, best_sharpe] = max_compo_tree(trucs, compo, 0.25);
+
+  std::cout << "----\n";
+  for (const auto &[nb_shares, i_asset] : best_compo) {
+    std::cout << nb_shares << ' ' << i_asset << '\n';
+  }
+
+  std::cout << best_sharpe << '\n';
 }

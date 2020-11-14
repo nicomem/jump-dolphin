@@ -149,29 +149,29 @@ inline void from_json(const json &j, Asset &v) {
 
 inline void to_json(json &j, const Quote &v) {
   j = json{};
-  TO_JSON(j, v, "close", close);
-  TO_JSON(j, v, "coupon", coupon);
-  TO_JSON(j, v, "date", date);
-  TO_JSON(j, v, "gross", gross);
-  TO_JSON(j, v, "high", high);
-  TO_JSON(j, v, "low", low);
-  TO_JSON(j, v, "nav", nav);
-  TO_JSON(j, v, "open", open);
-  TO_JSON(j, v, "return", v_return);
-  TO_JSON(j, v, "volume", volume);
+  // TO_JSON(j, v, "close", close);
+  // TO_JSON(j, v, "coupon", coupon);
+  // TO_JSON(j, v, "date", date);
+  // TO_JSON(j, v, "gross", gross);
+  // TO_JSON(j, v, "high", high);
+  // TO_JSON(j, v, "low", low);
+  // TO_JSON(j, v, "nav", nav);
+  // TO_JSON(j, v, "open", open);
+  // TO_JSON(j, v, "return", v_return);
+  j["volume"]["value"] = fmt::format("{}", v.volume);
 }
 
 inline void from_json(const json &j, Quote &v) {
-  FROM_JSON(j, v, "close", close);
-  FROM_JSON(j, v, "coupon", coupon);
-  FROM_JSON(j, v, "date", date);
-  FROM_JSON(j, v, "gross", gross);
-  FROM_JSON(j, v, "high", high);
-  FROM_JSON(j, v, "low", low);
-  FROM_JSON(j, v, "nav", nav);
-  FROM_JSON(j, v, "open", open);
-  FROM_JSON(j, v, "return", v_return);
-  FROM_JSON(j, v, "volume", volume);
+  // FROM_JSON(j, v, "close", close);
+  // FROM_JSON(j, v, "coupon", coupon);
+  // FROM_JSON(j, v, "date", date);
+  // FROM_JSON(j, v, "gross", gross);
+  // FROM_JSON(j, v, "high", high);
+  // FROM_JSON(j, v, "low", low);
+  // FROM_JSON(j, v, "nav", nav);
+  // FROM_JSON(j, v, "open", open);
+  // FROM_JSON(j, v, "return", v_return);
+  v.volume = std::stod(j.at("volume").at("value").get<std::string>());
 }
 
 inline void to_json(json &j, const portfolio_value &v) {

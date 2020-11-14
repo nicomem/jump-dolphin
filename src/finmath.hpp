@@ -52,6 +52,8 @@ using day_currency_rates_t =
 using days_currency_rates_t =
     std::unordered_map<std::string, day_currency_rates_t>;
 
+using nb_shares_t = unsigned;
+
 /** Compute the covariance between two assets */
 double compute_covariance(const asset_period_values_t &x_values,
                           asset_day_value_t x_mean,

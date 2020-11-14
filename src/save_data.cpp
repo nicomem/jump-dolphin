@@ -77,6 +77,22 @@
     return load_or_download<RET>(fname, getter);                               \
   }
 
+#define IMPL_GETTER4(RET, FUN)                                                 \
+  static RET FUN##_getter(const SaveData::DaysAssets &days_assets,             \
+                          JumpClient &client, bool verbose)
+
+/** Helper to automatically create load or get and save methods.
+ * A (FUN)_getter must exists */
+#define IMPL_METHOD4(RET, FUN)                                                 \
+  RET SaveData::FUN(const SaveData::DaysAssets &days_assets,                   \
+                    JumpClient &client, bool verbose) {                        \
+    constexpr std::string_view fname = #FUN ".json";                           \
+    auto getter = [&days_assets, &client, verbose]() {                         \
+      return FUN##_getter(days_assets, client, verbose);                       \
+    };                                                                         \
+    return load_or_download<RET>(fname, getter);                               \
+  }
+
 template <class T> static void save(std::string_view fname, T data) {
   static auto root = std::filesystem::current_path() / "data";
   std::filesystem::create_directory(root);
@@ -456,3 +472,27 @@ IMPL_OPT_GETTER(finmath::day_currency_rates_t, finmath::days_currency_rates_t,
 }
 IMPL_OPT_METHOD(finmath::day_currency_rates_t, finmath::days_currency_rates_t,
                 end_date_currency_rate)
+
+IMPL_GETTER4(std::vector<finmath::nb_shares_t>, start_date_assets_volumes) {
+  (void)verbose;
+  const auto &first_day_assets = days_assets.find("2016-06-01")->second;
+
+  auto volumes = std::vector<finmath::nb_shares_t>();
+  volumes.reserve(first_day_assets.size());
+
+  for (const auto &asset : first_day_assets) {
+    auto id = asset.id;
+    auto quotes = client.get_asset_quote(
+        std::move(id), std::make_optional(std::string("2016-06-01")),
+        std::make_optional(std::string("2016-06-01")));
+
+    if (quotes.empty()) {
+      volumes.emplace_back(0);
+    } else {
+      volumes.emplace_back(quotes[0].volume);
+    }
+  }
+
+  return volumes;
+}
+IMPL_METHOD4(std::vector<finmath::nb_shares_t>, start_date_assets_volumes)

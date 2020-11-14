@@ -95,20 +95,20 @@ struct Ratio {
 };
 
 struct Quote {
-  float close;
-  unsigned coupon;
-  std::string date;
-  float gross;
-  float high;
-  float low;
-  float nav;
-  float open;
-  double pl;
+  // float close;
+  // unsigned coupon;
+  // std::string date;
+  // float gross;
+  // float high;
+  // float low;
+  // float nav;
+  // float open;
+  // double pl;
   // Since C++ does not support using reserved keywords as identifier
   // and JSON lib does not support field alias,
   // we must define the conversion functions ourselves
-  double v_return;
-  unsigned volume;
+  // double v_return;
+  double volume;
 };
 
 struct PortfolioAsset {
@@ -164,7 +164,7 @@ struct Portfolio {
 
 struct RatioParam {
   RatioParam() = default;
-  RatioParam(RatioParam&&) = default;
+  RatioParam(RatioParam &&) = default;
 
   /** Id des ratios à éxécuter */
   std::vector<int32_t> ratio;
