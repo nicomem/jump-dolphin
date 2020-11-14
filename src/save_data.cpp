@@ -5,6 +5,7 @@
 #include <functional>
 #include <iostream>
 #include <sstream>
+#include <thread>
 
 /** Helper to create the method getter. Will only create the function
  * declaration, the body must be added just after the call */
@@ -154,7 +155,7 @@ IMPL_DAYS_GETTER(finmath::assets_day_values_t, assets_start_values) {
   r.reserve(day_assets.size());
 
   for (const auto &asset : day_assets) {
-    // TODO: Pase last_close_value & convert currency
+    // TODO: Parse last_close_value & convert currency
     (void)asset;
   }
 
@@ -196,3 +197,66 @@ IMPL_DAYS_GETTER(finmath::covariance_matrix_t, covariance_matrix) {
   return finmath::covariance_matrix_t();
 }
 IMPL_DAYS_METHOD(finmath::covariance_matrix_t, covariance_matrix)
+
+
+IMPL_GETTER(finmath::days_currency_rates_t, days_currency_rates) {
+  using namespace date;
+  constexpr auto date_start = sys_days(2016_y / June / 1);
+  constexpr auto date_end = sys_days(2020_y / September / 30);
+
+  auto map = finmath::days_currency_rates_t();
+
+  auto time_start = std::chrono::system_clock::now();
+  auto nb_errors = 0;
+
+  if (verbose) {
+    std::clog << "Fetching all assets every day between " << date_start
+              << " and " << date_end << '\n';
+  }
+
+  for (auto date = date_start; date <= date_end; date += days{1}) {
+    if (verbose) {
+      // Log the progress periodically
+      auto dt = std::chrono::system_clock::now() - time_start;
+      if (dt > std::chrono::seconds(5)) {
+        std::clog << "Date: " << date << " | Date errors: " << nb_errors
+                  << '\n';
+        time_start = std::chrono::system_clock::now();
+      }
+    }
+
+    // Convert the date to string
+    auto date_stream = std::stringstream("");
+    date_stream << date;
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(50)); //because the API sucks
+    try {
+      // Try to get the assets and add them to the vector
+      auto date_str = date_stream.str();
+
+      auto res = finmath::day_currency_rates_t();
+
+      for (auto currency : JumpTypes::currencies)
+      {
+        auto date_stream = std::stringstream("");
+        date_stream << date;
+
+        double rate = client.get_currency_change_rate(currency, JumpTypes::CurrencyCode::EUR, std::make_optional(date_stream.str())); 
+
+        res[JumpTypes::index(currency)] = rate;
+      }
+
+      // Add it to the map
+      map.emplace(std::move(date_str), std::move(res));
+    } catch (const std::exception &e) {
+      // If an error happened, continue with the next day
+      std::cerr << e.what() << std::endl;
+      ++nb_errors;
+      continue;
+    }
+  }
+
+  return map;
+}
+IMPL_METHOD(finmath::days_currency_rates_t, days_currency_rates)
+

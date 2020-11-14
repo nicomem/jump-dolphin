@@ -194,11 +194,17 @@ double PrivateJumpClient::get_currency_change_rate(
   session_.SetUrl(url);
   session_.SetParameters(std::move(params));
 
-  auto j = json::parse(session_.Get().text);
+  auto session_text = session_.Get().text;
+
+  if (session_text.empty())
+    return 1;
+
+  auto j = json::parse(session_text);
 
   // The rate value is a "double number" that uses a comma instead of a dot
   // So we must do the parsing ourselves...
   auto rate_str = j.at("rate").at("value").get<std::string>();
   std::replace(rate_str.begin(), rate_str.end(), ',', '.');
+  
   return std::stod(rate_str);
 }

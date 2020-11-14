@@ -41,6 +41,18 @@ using covariance_matrix_t = std::vector<std::vector<double>>;
 /** Value for each asset at a specific day */
 using assets_day_values_t = std::vector<asset_day_value_t>;
 
+
+/** Value of currency */
+using currency_rate_t = double;
+
+/** Array of all currencies values for all currencies */
+using day_currency_rates_t = std::array<currency_rate_t, JumpTypes::currencies.size()>;
+
+/** Map of currencies per dates */
+using days_currency_rates_t = std::unordered_map<std::string, day_currency_rates_t>;
+
+
+
 /** Compute the covariance between two assets */
 double compute_covariance(const asset_period_values_t &x_values,
                           asset_day_value_t x_mean,
