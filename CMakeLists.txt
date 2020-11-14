@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.17)
-project(GPGPU-ICP LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.14)
+project(dolphin LANGUAGES CXX)
 
 include(FetchContent)
 

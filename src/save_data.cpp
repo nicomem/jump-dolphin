@@ -22,6 +22,22 @@
     return load_or_download<RET>(fname, getter);                               \
   }
 
+#define IMPL_DAYS_GETTER(RET, FUN)                                             \
+  static RET FUN##_getter(std::optional<SaveData::DaysAssets> &days_assets,    \
+                          JumpClient &client, bool verbose)
+
+/** Helper to automatically create load or get and save methods.
+ * A (FUN)_getter must exists */
+#define IMPL_DAYS_METHOD(RET, FUN)                                             \
+  RET SaveData::FUN(std::optional<DaysAssets> &days_assets,                    \
+                    JumpClient &client, bool verbose) {                        \
+    constexpr std::string_view fname = #FUN ".json";                           \
+    auto getter = [&days_assets, &client, verbose]() {                         \
+      return FUN##_getter(days_assets, client, verbose);                       \
+    };                                                                         \
+    return load_or_download<RET>(fname, getter);                               \
+  }
+
 template <class T> static void save(std::string_view fname, T data) {
   static auto root = std::filesystem::current_path() / "data";
   std::filesystem::create_directory(root);
@@ -119,3 +135,64 @@ IMPL_GETTER(SaveData::DaysAssets, every_days_assets) {
   return map;
 }
 IMPL_METHOD(SaveData::DaysAssets, every_days_assets)
+
+IMPL_DAYS_GETTER(finmath::assets_day_values_t, assets_start_values) {
+  using namespace date;
+  constexpr auto date_start = sys_days(2016_y / June / 1);
+
+  // Convert the date to string
+  auto date_stream = std::stringstream("");
+  date_stream << date_start;
+
+  if (!days_assets) {
+    *days_assets = SaveData::every_days_assets(client, verbose);
+  }
+
+  const auto &day_assets = (*days_assets)[date_stream.str()];
+
+  auto r = finmath::assets_day_values_t();
+  r.reserve(day_assets.size());
+
+  for (const auto &asset : day_assets) {
+    // TODO: Pase last_close_value & convert currency
+    (void)asset;
+  }
+
+  return r;
+}
+IMPL_DAYS_METHOD(finmath::assets_day_values_t, assets_start_values)
+
+IMPL_DAYS_GETTER(finmath::assets_day_values_t, assets_end_values) {
+  using namespace date;
+  constexpr auto date_end = sys_days(2020_y / September / 30);
+
+  // Convert the date to string
+  auto date_stream = std::stringstream("");
+  date_stream << date_end;
+
+  if (!days_assets) {
+    *days_assets = SaveData::every_days_assets(client, verbose);
+  }
+
+  const auto &day_assets = (*days_assets)[date_stream.str()];
+
+  auto r = finmath::assets_day_values_t();
+  r.reserve(day_assets.size());
+
+  for (const auto &asset : day_assets) {
+    // TODO: Pase last_close_value & convert currency
+    (void)asset;
+  }
+
+  return r;
+}
+IMPL_DAYS_METHOD(finmath::assets_day_values_t, assets_end_values)
+
+IMPL_DAYS_GETTER(finmath::covariance_matrix_t, covariance_matrix) {
+  // TODO
+  (void)client;
+  (void)verbose;
+  (void)days_assets;
+  return finmath::covariance_matrix_t();
+}
+IMPL_DAYS_METHOD(finmath::covariance_matrix_t, covariance_matrix)
