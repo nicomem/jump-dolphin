@@ -15,6 +15,10 @@ using json = nlohmann::json;
     value = ID;                                                                \
     break;
 
+#define TOJUMPSWITCH(ID)                                                       \
+  case ID:                                                                     \
+    return Other::ID;
+
 namespace CompactTypes {
 struct CurrencyCode {
   enum _enum : unsigned char {
@@ -39,6 +43,20 @@ struct CurrencyCode {
       CTORENUMSWITCH(NOK);
       CTORENUMSWITCH(SEK);
       CTORENUMSWITCH(USD);
+    }
+  }
+
+  JumpTypes::CurrencyCode to_jump() const {
+    using Other = JumpTypes::CurrencyCode;
+    switch (value) {
+      TOJUMPSWITCH(EUR);
+      TOJUMPSWITCH(GBP);
+      TOJUMPSWITCH(JPY);
+      TOJUMPSWITCH(NOK);
+      TOJUMPSWITCH(SEK);
+      TOJUMPSWITCH(USD);
+    default:
+      return Other::EUR
     }
   }
 };

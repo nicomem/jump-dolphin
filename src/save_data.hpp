@@ -20,6 +20,7 @@ struct SaveData {
    */
   static finmath::assets_day_values_t
   assets_start_values(std::optional<DaysAssets> &days_assets,
+                      const finmath::day_currency_rates_t &start_rates,
                       JumpClient &client, bool verbose = false);
 
   /** Extract the assets values for the last investment day.
@@ -27,8 +28,9 @@ struct SaveData {
    * present.
    */
   static finmath::assets_day_values_t
-  assets_end_values(std::optional<DaysAssets> &days_assets, JumpClient &client,
-                    bool verbose = false);
+  assets_end_values(std::optional<DaysAssets> &days_assets,
+                    const finmath::day_currency_rates_t &end_rates,
+                    JumpClient &client, bool verbose = false);
 
   /** Compute the covariance matrix between each couple of assets
    * Store/Use the DaysAssets in the given parameter if the save file is not
@@ -38,20 +40,21 @@ struct SaveData {
   covariance_matrix(std::optional<DaysAssets> &days_assets, JumpClient &client,
                     bool verbose = false);
 
-
-  /** Get every rates for every currencies -- from currency to EUR -- for the invesment period
+  /** Get every rates for every currencies -- from currency to EUR -- for the
+   * invesment period
    */
-  static finmath::days_currency_rates_t days_currency_rates(JumpClient &client, bool verbose = false);
+  static finmath::days_currency_rates_t
+  days_currency_rates(JumpClient &client, bool verbose = false);
 
   /** Get the the first day currency rates
    */
-  static finmath::day_currency_rates_t start_date_currency_rate(std::optional<finmath::days_currency_rates_t> &days, JumpClient &client,
-                                                                bool verbose = false);
+  static finmath::day_currency_rates_t
+  start_date_currency_rate(std::optional<finmath::days_currency_rates_t> &days,
+                           JumpClient &client, bool verbose = false);
 
-   /** Get the the last day currency rates
+  /** Get the the last day currency rates
    */
-  static finmath::day_currency_rates_t end_date_currency_rate(std::optional<finmath::days_currency_rates_t> &days, JumpClient &client,
-                                                                bool verbose = false);
-
+  static finmath::day_currency_rates_t
+  end_date_currency_rate(std::optional<finmath::days_currency_rates_t> &days,
+                         JumpClient &client, bool verbose = false);
 };
-

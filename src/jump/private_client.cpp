@@ -205,6 +205,6 @@ double PrivateJumpClient::get_currency_change_rate(
   // So we must do the parsing ourselves...
   auto rate_str = j.at("rate").at("value").get<std::string>();
   std::replace(rate_str.begin(), rate_str.end(), ',', '.');
-  
+
   return std::stod(rate_str);
 }

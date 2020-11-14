@@ -25,6 +25,17 @@ int main(int argc, char *argv[]) {
 
   auto client = JumpClient::build(std::move(username), std::move(password));
 
-  //auto days_assets = SaveData::every_days_assets(*client, VERBOSE);
-  auto days_currencies = SaveData::days_currency_rates(*client, VERBOSE);
+  std::optional<finmath::days_currency_rates_t> days_rates = std::nullopt;
+  auto start_rates =
+      SaveData::start_date_currency_rate(days_rates, *client, VERBOSE);
+  auto end_rates =
+      SaveData::end_date_currency_rate(days_rates, *client, VERBOSE);
+  days_rates = std::nullopt;
+
+  std::optional<SaveData::DaysAssets> days_assets = std::nullopt;
+  auto start_assets =
+      SaveData::assets_start_values(days_assets, start_rates, *client, VERBOSE);
+  auto end_assets =
+      SaveData::assets_end_values(days_assets, end_rates, *client, VERBOSE);
+  days_assets = std::nullopt;
 }

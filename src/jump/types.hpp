@@ -28,41 +28,39 @@ enum class AssetType {
 
 enum class CurrencyCode { EUR, GBP, JPY, NOK, SEK, USD };
 
-static unsigned index(CurrencyCode value)
-  {
-    switch (value)
-    {
-    case CurrencyCode::EUR:
-      return 0;
+inline unsigned index(CurrencyCode value) {
+  switch (value) {
+  case CurrencyCode::EUR:
+    return 0;
 
-    //case CurrencyCode::GBP:
+    // case CurrencyCode::GBP:
     //  return 1;
 
-    case CurrencyCode::JPY:
-      return 1;
+  case CurrencyCode::JPY:
+    return 1;
 
-    //case CurrencyCode::NOK:
+    // case CurrencyCode::NOK:
     //  return 3;
 
-    //case CurrencyCode::SEK:
+    // case CurrencyCode::SEK:
     //  return 4;
 
-    case CurrencyCode::USD:
-      return 2;
-    
-    default:
-      return 0;
-    }
-  }
+  case CurrencyCode::USD:
+    return 2;
 
-  static constexpr auto currencies = std::array{
+  default:
+    return 0;
+  }
+}
+
+static constexpr auto currencies = std::array{
     CurrencyCode::EUR,
-    //CurrencyCode::GBP,
+    // CurrencyCode::GBP,
     CurrencyCode::JPY,
-    //CurrencyCode::NOK,
-    //CurrencyCode::SEK,
+    // CurrencyCode::NOK,
+    // CurrencyCode::SEK,
     CurrencyCode::USD,
-  };
+};
 
 struct AssetValue {
   /** Value of a share of the asset */

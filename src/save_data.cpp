@@ -23,18 +23,36 @@
     return load_or_download<RET>(fname, getter);                               \
   }
 
-#define IMPL_DAYS_GETTER(RET, FUN)                                             \
-  static RET FUN##_getter(std::optional<SaveData::DaysAssets> &days_assets,    \
+#define IMPL_OPT_GETTER(RET, T, FUN)                                           \
+  static RET FUN##_getter(std::optional<T> &opt_data, JumpClient &client,      \
+                          bool verbose)
+
+/** Helper to automatically create load or get and save methods.
+ * A (FUN)_getter must exists */
+#define IMPL_OPT_METHOD(RET, T, FUN)                                           \
+  RET SaveData::FUN(std::optional<T> &opt_data, JumpClient &client,            \
+                    bool verbose) {                                            \
+    constexpr std::string_view fname = #FUN ".json";                           \
+    auto getter = [&opt_data, &client, verbose]() {                            \
+      return FUN##_getter(opt_data, client, verbose);                          \
+    };                                                                         \
+    return load_or_download<RET>(fname, getter);                               \
+  }
+
+#define IMPL_GETTER2(RET, T, FUN)                                              \
+  static RET FUN##_getter(std::optional<T> &opt_data,                          \
+                          const finmath::day_currency_rates_t &rates,          \
                           JumpClient &client, bool verbose)
 
 /** Helper to automatically create load or get and save methods.
  * A (FUN)_getter must exists */
-#define IMPL_DAYS_METHOD(RET, FUN)                                             \
-  RET SaveData::FUN(std::optional<DaysAssets> &days_assets,                    \
+#define IMPL_METHOD2(RET, T, FUN)                                              \
+  RET SaveData::FUN(std::optional<T> &opt_data,                                \
+                    const finmath::day_currency_rates_t &rates,                \
                     JumpClient &client, bool verbose) {                        \
     constexpr std::string_view fname = #FUN ".json";                           \
-    auto getter = [&days_assets, &client, verbose]() {                         \
-      return FUN##_getter(days_assets, client, verbose);                       \
+    auto getter = [&opt_data, &rates, &client, verbose]() {                    \
+      return FUN##_getter(opt_data, rates, client, verbose);                   \
     };                                                                         \
     return load_or_download<RET>(fname, getter);                               \
   }
@@ -137,7 +155,8 @@ IMPL_GETTER(SaveData::DaysAssets, every_days_assets) {
 }
 IMPL_METHOD(SaveData::DaysAssets, every_days_assets)
 
-IMPL_DAYS_GETTER(finmath::assets_day_values_t, assets_start_values) {
+IMPL_GETTER2(finmath::assets_day_values_t, SaveData::DaysAssets,
+             assets_start_values) {
   using namespace date;
   constexpr auto date_start = sys_days(2016_y / June / 1);
 
@@ -145,25 +164,31 @@ IMPL_DAYS_GETTER(finmath::assets_day_values_t, assets_start_values) {
   auto date_stream = std::stringstream("");
   date_stream << date_start;
 
-  if (!days_assets) {
-    *days_assets = SaveData::every_days_assets(client, verbose);
+  if (!opt_data) {
+    opt_data = SaveData::every_days_assets(client, verbose);
   }
 
-  const auto &day_assets = (*days_assets)[date_stream.str()];
+  const auto &day_assets = (*opt_data)[date_stream.str()];
 
   auto r = finmath::assets_day_values_t();
   r.reserve(day_assets.size());
 
   for (const auto &asset : day_assets) {
-    // TODO: Parse last_close_value & convert currency
-    (void)asset;
+    if (asset.last_close_value) {
+      auto rate = rates[JumpTypes::index(asset.currency.to_jump())];
+      r.emplace_back(asset.last_close_value->value * rate);
+    } else {
+      r.emplace_back(-1);
+    }
   }
 
   return r;
 }
-IMPL_DAYS_METHOD(finmath::assets_day_values_t, assets_start_values)
+IMPL_METHOD2(finmath::assets_day_values_t, SaveData::DaysAssets,
+             assets_start_values)
 
-IMPL_DAYS_GETTER(finmath::assets_day_values_t, assets_end_values) {
+IMPL_GETTER2(finmath::assets_day_values_t, SaveData::DaysAssets,
+             assets_end_values) {
   using namespace date;
   constexpr auto date_end = sys_days(2020_y / September / 30);
 
@@ -171,33 +196,39 @@ IMPL_DAYS_GETTER(finmath::assets_day_values_t, assets_end_values) {
   auto date_stream = std::stringstream("");
   date_stream << date_end;
 
-  if (!days_assets) {
-    *days_assets = SaveData::every_days_assets(client, verbose);
+  if (!opt_data) {
+    opt_data = SaveData::every_days_assets(client, verbose);
   }
 
-  const auto &day_assets = (*days_assets)[date_stream.str()];
+  const auto &day_assets = (*opt_data)[date_stream.str()];
 
   auto r = finmath::assets_day_values_t();
   r.reserve(day_assets.size());
 
   for (const auto &asset : day_assets) {
-    // TODO: Pase last_close_value & convert currency
-    (void)asset;
+    if (asset.last_close_value) {
+      auto rate = rates[JumpTypes::index(asset.currency.to_jump())];
+      r.emplace_back(asset.last_close_value->value * rate);
+    } else {
+      r.emplace_back(-1);
+    }
   }
 
   return r;
 }
-IMPL_DAYS_METHOD(finmath::assets_day_values_t, assets_end_values)
+IMPL_METHOD2(finmath::assets_day_values_t, SaveData::DaysAssets,
+             assets_end_values)
 
-IMPL_DAYS_GETTER(finmath::covariance_matrix_t, covariance_matrix) {
+IMPL_OPT_GETTER(finmath::covariance_matrix_t, SaveData::DaysAssets,
+                covariance_matrix) {
   // TODO
   (void)client;
   (void)verbose;
-  (void)days_assets;
+  (void)opt_data;
   return finmath::covariance_matrix_t();
 }
-IMPL_DAYS_METHOD(finmath::covariance_matrix_t, covariance_matrix)
-
+IMPL_OPT_METHOD(finmath::covariance_matrix_t, SaveData::DaysAssets,
+                covariance_matrix)
 
 IMPL_GETTER(finmath::days_currency_rates_t, days_currency_rates) {
   using namespace date;
@@ -229,19 +260,21 @@ IMPL_GETTER(finmath::days_currency_rates_t, days_currency_rates) {
     auto date_stream = std::stringstream("");
     date_stream << date;
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(50)); //because the API sucks
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(50)); // because the API sucks
     try {
       // Try to get the assets and add them to the vector
       auto date_str = date_stream.str();
 
       auto res = finmath::day_currency_rates_t();
 
-      for (auto currency : JumpTypes::currencies)
-      {
+      for (auto currency : JumpTypes::currencies) {
         auto date_stream = std::stringstream("");
         date_stream << date;
 
-        double rate = client.get_currency_change_rate(currency, JumpTypes::CurrencyCode::EUR, std::make_optional(date_stream.str())); 
+        double rate = client.get_currency_change_rate(
+            currency, JumpTypes::CurrencyCode::EUR,
+            std::make_optional(date_stream.str()));
 
         res[JumpTypes::index(currency)] = rate;
       }
@@ -260,3 +293,38 @@ IMPL_GETTER(finmath::days_currency_rates_t, days_currency_rates) {
 }
 IMPL_METHOD(finmath::days_currency_rates_t, days_currency_rates)
 
+IMPL_OPT_GETTER(finmath::day_currency_rates_t, finmath::days_currency_rates_t,
+                start_date_currency_rate) {
+  if (!opt_data) {
+    opt_data = SaveData::days_currency_rates(client, verbose);
+  }
+
+  using namespace date;
+  constexpr auto date_start = sys_days(2016_y / June / 1);
+
+  // Convert the date to string
+  auto date_stream = std::stringstream("");
+  date_stream << date_start;
+
+  return (*opt_data)[date_stream.str()];
+}
+IMPL_OPT_METHOD(finmath::day_currency_rates_t, finmath::days_currency_rates_t,
+                start_date_currency_rate)
+
+IMPL_OPT_GETTER(finmath::day_currency_rates_t, finmath::days_currency_rates_t,
+                end_date_currency_rate) {
+  if (!opt_data) {
+    opt_data = SaveData::days_currency_rates(client, verbose);
+  }
+
+  using namespace date;
+  constexpr auto date_end = sys_days(2020_y / September / 30);
+
+  // Convert the date to string
+  auto date_stream = std::stringstream("");
+  date_stream << date_end;
+
+  return (*opt_data)[date_stream.str()];
+}
+IMPL_OPT_METHOD(finmath::day_currency_rates_t, finmath::days_currency_rates_t,
+                end_date_currency_rate)
