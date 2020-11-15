@@ -1,5 +1,6 @@
 #include "save_data.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -252,6 +253,53 @@ IMPL_GETTER5(SaveData::DaysAssetAndVolumes, filtered_assets_and_volumes) {
   if (verbose) {
     std::clog << "Interesting assets: " << stock_index.size() << " / "
               << first_day_assets.size() << std::endl;
+  }
+
+  if (verbose) {
+    // Keep only the assets that have the best sharpes
+    std::clog << "Filter based on sharpe...\n";
+  }
+
+  // Get the sharpes
+  auto ratios = std::vector<int32_t>();
+  ratios.emplace_back(12);
+
+  auto assets_id = std::vector<int32_t>();
+  for (auto i : stock_index) {
+    const auto &asset_id = first_day_assets[i].id;
+    assets_id.emplace_back(std::stoi(asset_id));
+  }
+
+  JumpTypes::RatioParam params = JumpTypes::RatioParam();
+  params.ratio = ratios;
+  params.asset = assets_id;
+  params.benchmark = std::nullopt;
+  params.start_date = std::string("2016-06-01");
+  params.end_date = std::string("2020-09-30");
+
+  // Get and parse the sharpes
+  auto ratios_sharpe = client.compute_ratio(std::move(params));
+
+  // Remove assets that have low sharpe
+  auto j = 0u;
+  for (auto i = 0u; i < stock_index.size(); ++i) {
+    const auto &asset_id = first_day_assets[stock_index[i]].id;
+    auto sharpe_str =
+        ratios_sharpe.value.find(asset_id)->second.find("12")->second.value;
+    std::replace(sharpe_str.begin(), sharpe_str.end(), ',', '.');
+    auto sharpe = std::stod(sharpe_str);
+
+    if (sharpe >= 0.5) {
+      stock_index[j] = stock_index[i];
+      ++j;
+    }
+  }
+
+  auto last_size = stock_index.size();
+  stock_index.resize(j);
+
+  if (verbose) {
+    std::clog << "2nd filtering: " << j << " / " << last_size << std::endl;
   }
 
   // Create a new DayAsset with only the interesting assets
