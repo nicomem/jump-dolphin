@@ -18,9 +18,11 @@ static SaveData::DaysAssets filter_assets(SaveData::DaysAssets &assets) {
   for (unsigned i = 0; i < first_day_assets.size(); ++i) {
     if (first_day_assets[i].type.value != CompactTypes::AssetType::STOCK)
       continue;
-    if (!first_day_assets[i].last_close_value.has_value() || !last_day_assets[i].last_close_value.has_value() ||
-        first_day_assets[i].last_close_value.value().value >= last_day_assets[i].last_close_value.value().value)
-        continue;
+    if (!first_day_assets[i].last_close_value.has_value() ||
+        !last_day_assets[i].last_close_value.has_value() ||
+        first_day_assets[i].last_close_value.value().value >=
+            last_day_assets[i].last_close_value.value().value)
+      continue;
 
     stock_index.emplace_back(i);
   }
