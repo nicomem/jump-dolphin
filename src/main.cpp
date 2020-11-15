@@ -3,12 +3,24 @@
 #include "save_data.hpp"
 #include "tree.hpp"
 
+#include <cassert>
 #include <iostream>
 #include <thread>
 
 #include <CLI/CLI.hpp>
 
 constexpr auto VERBOSE = true;
+
+#define CHECK_CORRUPTION(S1, S2)                                               \
+  do {                                                                         \
+    auto s1 = S1;                                                              \
+    auto s2 = S2;                                                              \
+    if (s1 != s2) {                                                            \
+      std::cerr << "(" #S1 "= " << s1 << ") != (" #S2 "= " << s2               \
+                << "): Corrupted files, please delete data/\n";                \
+      exit(EXIT_FAILURE);                                                      \
+    }                                                                          \
+  } while (0)
 
 static TrucsInteressants get_the_trucs_interessants(JumpClient &client) {
   std::optional<finmath::days_currency_rates_t> days_rates = std::nullopt;
@@ -45,7 +57,8 @@ static TrucsInteressants get_the_trucs_interessants(JumpClient &client) {
                                                 days_rates, client, VERBOSE);
 
   // std::clog << "start_date_assets_volumes...\n";
-  // auto nb_shares = SaveData::start_date_assets_volumes(*filtered_days_assets,
+  // auto nb_shares =
+  // SaveData::start_date_assets_volumes(*filtered_days_assets,
   //                                                      client, VERBOSE);
 
   std::clog << "assets_id...\n";
@@ -59,6 +72,12 @@ static TrucsInteressants get_the_trucs_interessants(JumpClient &client) {
   for (auto i = 0u; i < start_values.size(); ++i) {
     assets_capital.emplace_back(start_values[i] * nb_shares[i]);
   }
+
+  CHECK_CORRUPTION(start_values.size(), end_values.size());
+  CHECK_CORRUPTION(start_values.size(), cov_matrix.size());
+  CHECK_CORRUPTION(start_values.size(), nb_shares.size());
+  CHECK_CORRUPTION(start_values.size(), assets_id.size());
+  CHECK_CORRUPTION(start_values.size(), assets_capital.size());
 
   return TrucsInteressants{start_values, end_values, cov_matrix,
                            nb_shares,    assets_id,  assets_capital};
@@ -91,8 +110,31 @@ max_compo_tree_multithread(const TrucsInteressants &trucs) {
                          i);
   }
 
-  for (auto &thread : threads) {
-    thread.join();
+  compo_t best_compo;
+  sharpe_t best_sharpe = -INFINITY;
+
+  for (auto i = 0u; i < nb_threads; ++i) {
+    threads[nb_threads - i - 1].join();
+
+    const auto &[compo, sharpe] = results[nb_threads - i - 1];
+    if (sharpe > best_sharpe) {
+      best_sharpe = sharpe;
+      best_compo = compo;
+    }
+
+    std::clog << "\n=========\nA thread has completed\n";
+    if (best_sharpe == -INFINITY) {
+      std::clog << "No composition found\n";
+    } else {
+      std::clog << "Current best composition:\n";
+
+      std::cout << "Sharpe: " << best_sharpe << '\n';
+      std::cout << "List of (asset_id, bought_shares):\n";
+      for (const auto &[nb_shares, i_asset] : best_compo) {
+        std::cout << "- " << trucs.assets_id[i_asset] << "\t" << nb_shares
+                  << '\n';
+      }
+    }
   }
 
   return *std::max_element(results.begin(), results.end(),
@@ -125,8 +167,8 @@ int main(int argc, char *argv[]) {
   // Display the best portfolio found
   std::cout << "\nBest portfolio found:\n";
   std::cout << "Sharpe: " << best_sharpe << '\n';
-  std::cout << "List of (bought_shares, asset_id):\n";
+  std::cout << "List of (asset_id, bought_shares):\n";
   for (const auto &[nb_shares, i_asset] : best_compo) {
-    std::cout << "- " << nb_shares << "\t" << trucs.assets_id[i_asset] << '\n';
+    std::cout << "- " << trucs.assets_id[i_asset] << "\t" << nb_shares << '\n';
   }
 }

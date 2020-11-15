@@ -313,7 +313,14 @@ IMPL_GETTER5(SaveData::DaysAssetAndVolumes, filtered_assets_and_volumes) {
     res.emplace(date, day_vec);
   }
 
-  return std::make_tuple(res, volumes);
+  // Also remove the assets volumes
+  auto volumes2 = std::vector<finmath::nb_shares_t>();
+  volumes2.reserve(stock_index.size());
+  for (auto i : stock_index) {
+    volumes2.push_back(volumes[i]);
+  }
+
+  return std::make_tuple(res, volumes2);
 }
 IMPL_METHOD5(SaveData::DaysAssetAndVolumes, filtered_assets_and_volumes)
 
@@ -524,8 +531,8 @@ IMPL_GETTER(finmath::days_currency_rates_t, days_currency_rates) {
   auto nb_errors = 0;
 
   if (verbose) {
-    std::clog << "Fetching all assets every day between " << date_start
-              << " and " << date_end << '\n';
+    std::clog << "Fetching rates every day between " << date_start << " and "
+              << date_end << '\n';
   }
 
   for (auto date = date_start; date <= date_end; date += days{1}) {

@@ -1,5 +1,8 @@
 #include "tree.hpp"
 
+#include <chrono>
+#include <iostream>
+
 static double portolio_capital(const TrucsInteressants &trucs,
                                const compo_t &compo) {
   double r = 0;
@@ -24,7 +27,7 @@ static sharpe_t fill_compo(const TrucsInteressants &trucs, compo_t &compo,
     nb_shares = max_cap / trucs.start_values[i_asset];
   }
 
-  shares_capital.resize(compo.size());
+  shares_capital.resize(0);
 
   // Verify the portfolio
   auto compo_cap = portolio_capital(trucs, compo);
@@ -70,36 +73,66 @@ static sharpe_t fill_compo(const TrucsInteressants &trucs, compo_t &compo,
   return (sell_value / compo_cap - 1) / (vol + 1e-8);
 }
 
+/** Permute the composition
+ * \return true if the composition have been permuted,
+ * or false if the composition was already the last one
+ */
+static bool permute_compo(compo_t &compo, unsigned nb_assets,
+                          unsigned nb_assets_perm) {
+  auto i = 0u;
+  for (; i < nb_assets_perm; ++i) {
+    // Permute this index
+    auto &c = std::get<1>(compo[compo.size() - i - 1]);
+    ++c;
+
+    // If this index has not reach the end, we can stop here
+    // Else we need to permute the previous compo index
+    if (c + i < nb_assets)
+      break;
+  }
+
+  // If all index have been permuted and overset (==nb_assets)
+  // The compo was the last permutation
+  if (i == nb_assets_perm)
+    return false;
+
+  // Set the following index (that are currently == nb_assets)
+  for (; i > 0; --i) {
+    // Set the next index to the current + 1
+    auto &c = std::get<1>(compo[compo.size() - i]);
+    c = std::get<1>(compo[compo.size() - i - 1]) + 1;
+  }
+
+  return true;
+}
+
 std::tuple<compo_t, sharpe_t>
 max_compo_tree2(const TrucsInteressants &trucs,
                 finmath::asset_period_values_t &shares_capital, compo_t &compo,
                 share_index_t start_asset) {
   auto best_compo = compo_t();
   auto best_sharpe = -INFINITY;
-  if (compo.size() >= min_portfolio_size) {
+
+  // Create initial composition
+  auto nb_assets_perm = max_portfolio_size - compo.size();
+  for (auto i = start_asset; compo.size() < max_portfolio_size; ++i) {
+    compo.emplace_back(-1, i);
+  }
+
+  // Not enough assets => return none found
+  if (std::get<1>(compo.back()) >= trucs.assets_capital.size())
+    return std::make_tuple(best_compo, best_sharpe);
+
+  do {
+    // auto t1 = std::chrono::system_clock::now();
     auto compo_sharpe = fill_compo(trucs, compo, shares_capital);
+    // auto t2 = std::chrono::system_clock::now();
+    // std::cerr << std::chrono::duration<double>(t2 - t1).count() << '\n';
     if (compo_sharpe > best_sharpe) {
       best_compo = compo;
       best_sharpe = compo_sharpe;
     }
-  }
-
-  if (compo.size() < max_portfolio_size) {
-    constexpr auto ONLY_LOOK_FIRST_N_ASSETS = 45;
-    for (auto i_asset = start_asset; i_asset < ONLY_LOOK_FIRST_N_ASSETS;
-         ++i_asset) {
-      compo.emplace_back(-1, i_asset);
-
-      auto [child_compo, child_sharpe] =
-          max_compo_tree2(trucs, shares_capital, compo, i_asset + 1);
-      if (child_sharpe > best_sharpe) {
-        best_compo = child_compo;
-        best_sharpe = child_sharpe;
-      }
-
-      compo.pop_back();
-    }
-  }
+  } while (permute_compo(compo, trucs.assets_capital.size(), nb_assets_perm));
 
   return std::make_tuple(best_compo, best_sharpe);
 }
