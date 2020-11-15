@@ -1,11 +1,12 @@
-#include <iostream>
-
-#include <CLI/CLI.hpp>
-
 #include "jump/client.hpp"
 #include "jump/types_json.hpp"
 #include "save_data.hpp"
 #include "tree.hpp"
+
+#include <iostream>
+#include <thread>
+
+#include <CLI/CLI.hpp>
 
 constexpr auto VERBOSE = true;
 
@@ -63,8 +64,44 @@ static TrucsInteressants get_the_trucs_interessants(JumpClient &client) {
                            nb_shares,    assets_id,  assets_capital};
 }
 
-int main(int argc, char *argv[]) {
+static void thread_worker(const TrucsInteressants &trucs,
+                          std::tuple<compo_t, sharpe_t> &result,
+                          unsigned i_thread) {
+  auto compo = compo_t();
+  compo.reserve(40);
+  compo.emplace_back(-1, i_thread);
 
+  auto shares_capital = finmath::asset_period_values_t();
+  shares_capital.reserve(40);
+
+  result = max_compo_tree2(trucs, shares_capital, compo, i_thread + 1);
+}
+
+static std::tuple<compo_t, sharpe_t>
+max_compo_tree_multithread(const TrucsInteressants &trucs) {
+  auto nb_threads = trucs.assets_id.size() - min_portfolio_size;
+
+  auto threads = std::vector<std::thread>();
+  threads.reserve(nb_threads);
+
+  auto results = std::vector<std::tuple<compo_t, sharpe_t>>(nb_threads);
+
+  for (auto i = 0u; i < nb_threads; ++i) {
+    threads.emplace_back(thread_worker, std::ref(trucs), std::ref(results[i]),
+                         i);
+  }
+
+  for (auto &thread : threads) {
+    thread.join();
+  }
+
+  return *std::max_element(results.begin(), results.end(),
+                           [](const auto &a, const auto &b) {
+                             return std::get<1>(b) > std::get<1>(a);
+                           });
+}
+
+int main(int argc, char *argv[]) {
   std::string username, password;
 
   // Parse the command line arguments
@@ -80,16 +117,10 @@ int main(int argc, char *argv[]) {
 
   // Load or fetch the pre-calculated data
   auto trucs = get_the_trucs_interessants(*client);
-  auto compo = compo_t();
-  compo.reserve(40);
-
-  auto shares_capital = finmath::asset_period_values_t();
-  shares_capital.reserve(40);
 
   // Try to create the best portfolio
   std::clog << "max_compo_tree\n";
-  auto [best_compo, best_sharpe] =
-      max_compo_tree2(trucs, shares_capital, compo);
+  auto [best_compo, best_sharpe] = max_compo_tree_multithread(trucs);
 
   // Display the best portfolio found
   std::cout << "\nBest portfolio found:\n";

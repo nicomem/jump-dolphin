@@ -90,6 +90,7 @@ target_link_libraries(dolphin PRIVATE
     cpr::cpr
     fmt::fmt
     date::date
+    pthread
 )
 
 # Set C++ macro for bench to locate files

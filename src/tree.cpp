@@ -1,20 +1,5 @@
 #include "tree.hpp"
 
-// Min number of assets in portfolio
-constexpr unsigned min_portfolio_size = 6; // 15;
-
-// Max number of assets in portfolio
-constexpr unsigned max_portfolio_size = 6; // 40;
-
-// Min percent of the portfolio of a share
-constexpr double min_share_percent = 0.01;
-
-// Max percent of the portfolio of a share
-constexpr double max_share_percent = 0.3;
-
-// Min percent of stock percent assets in portfolio
-constexpr double min_stock_percent = 0.5;
-
 static double portolio_capital(const TrucsInteressants &trucs,
                                const compo_t &compo) {
   double r = 0;
@@ -100,7 +85,8 @@ max_compo_tree2(const TrucsInteressants &trucs,
   }
 
   if (compo.size() < max_portfolio_size) {
-    for (auto i_asset = start_asset; i_asset < trucs.start_values.size();
+    constexpr auto ONLY_LOOK_FIRST_N_ASSETS = 45;
+    for (auto i_asset = start_asset; i_asset < ONLY_LOOK_FIRST_N_ASSETS;
          ++i_asset) {
       compo.emplace_back(-1, i_asset);
 
