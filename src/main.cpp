@@ -53,8 +53,14 @@ static TrucsInteressants get_the_trucs_interessants(JumpClient &client) {
   // std::cout << (*days_assets)["2016-06-01"][259].id << '\n';
   // return 0;
 
-  return TrucsInteressants{start_rates, end_rates, start_values, end_values,
-                           cov_matrix,  nb_shares, assets_id};
+  auto assets_capital = std::vector<double>();
+  assets_capital.reserve(start_values.size());
+  for (auto i = 0u; i < start_values.size(); ++i) {
+    assets_capital.emplace_back(start_values[i] * nb_shares[i]);
+  }
+
+  return TrucsInteressants{start_values, end_values, cov_matrix,
+                           nb_shares,    assets_id,  assets_capital};
 }
 
 int main(int argc, char *argv[]) {
@@ -75,10 +81,15 @@ int main(int argc, char *argv[]) {
   // Load or fetch the pre-calculated data
   auto trucs = get_the_trucs_interessants(*client);
   auto compo = compo_t();
+  compo.reserve(40);
+
+  auto shares_capital = finmath::asset_period_values_t();
+  shares_capital.reserve(40);
 
   // Try to create the best portfolio
   std::clog << "max_compo_tree\n";
-  auto [best_compo, best_sharpe] = max_compo_tree(trucs, compo, 0.25);
+  auto [best_compo, best_sharpe] =
+      max_compo_tree2(trucs, shares_capital, compo);
 
   // Display the best portfolio found
   std::cout << "\nBest portfolio found:\n";
