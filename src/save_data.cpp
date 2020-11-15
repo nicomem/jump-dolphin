@@ -93,6 +93,22 @@
     return load_or_download<RET>(fname, getter);                               \
   }
 
+#define IMPL_GETTER5(RET, FUN)                                                 \
+  static RET FUN##_getter(std::optional<SaveData::DaysAssets> &days_assets,    \
+                          JumpClient &client, bool verbose)
+
+/** Helper to automatically create load or get and save methods.
+ * A (FUN)_getter must exists */
+#define IMPL_METHOD5(RET, FUN)                                                 \
+  RET SaveData::FUN(std::optional<SaveData::DaysAssets> &days_assets,          \
+                    JumpClient &client, bool verbose) {                        \
+    constexpr std::string_view fname = #FUN ".json";                           \
+    auto getter = [&days_assets, &client, verbose]() {                         \
+      return FUN##_getter(days_assets, client, verbose);                       \
+    };                                                                         \
+    return load_or_download<RET>(fname, getter);                               \
+  }
+
 template <class T> static void save(std::string_view fname, T data) {
   static auto root = std::filesystem::current_path() / "data";
   std::filesystem::create_directory(root);
@@ -190,6 +206,81 @@ IMPL_GETTER(SaveData::DaysAssets, every_days_assets) {
   return map;
 }
 IMPL_METHOD(SaveData::DaysAssets, every_days_assets)
+
+IMPL_GETTER5(SaveData::DaysAssetAndVolumes, filtered_assets_and_volumes) {
+  if (!days_assets) {
+    days_assets = SaveData::every_days_assets(client, verbose);
+  }
+
+  const auto &first_day_assets = (*days_assets)["2016-06-01"];
+  const auto &last_day_assets = (*days_assets)["2020-09-30"];
+  auto stock_index = std::vector<unsigned>();
+  auto volumes = std::vector<finmath::nb_shares_t>();
+
+  // Filter the assets to keep
+  for (unsigned i = 0; i < first_day_assets.size(); ++i) {
+    // Remove non-stock assets
+    if (first_day_assets[i].type.value != CompactTypes::AssetType::STOCK)
+      continue;
+
+    // Remove assets that do not have buy/sell values
+    if (!first_day_assets[i].last_close_value.has_value() ||
+        !last_day_assets[i].last_close_value.has_value())
+      continue;
+
+    // Remove assets that have a negative return
+    if (first_day_assets[i].last_close_value.value().value >=
+        last_day_assets[i].last_close_value.value().value)
+      continue;
+
+    // Get the volume for the asset
+    auto id = first_day_assets[i].id;
+    auto quotes = client.get_asset_quote(
+        std::move(id), std::make_optional(std::string("2016-06-01")),
+        std::make_optional(std::string("2016-06-01")));
+
+    // If nothing can be bought, the asset is not interesting
+    if (quotes.empty() || quotes[0].volume == 0) {
+      continue;
+    } else {
+      volumes.emplace_back(quotes[0].volume);
+    }
+
+    stock_index.emplace_back(i);
+  }
+
+  if (verbose) {
+    std::clog << "Interesting assets: " << stock_index.size() << " / "
+              << first_day_assets.size() << std::endl;
+  }
+
+  // Create a new DayAsset with only the interesting assets
+  auto res = SaveData::DaysAssets();
+  for (const auto &[date, day_asset] : *days_assets) {
+    auto day_vec = std::vector<CompactTypes::Asset>();
+    day_vec.reserve(stock_index.size());
+    for (auto i : stock_index) {
+      day_vec.push_back(day_asset[i]);
+    }
+    res.emplace(date, day_vec);
+  }
+
+  return std::make_tuple(res, volumes);
+}
+IMPL_METHOD5(SaveData::DaysAssetAndVolumes, filtered_assets_and_volumes)
+
+std::vector<std::string> SaveData::assets_id(const DaysAssets &days_assets) {
+  const auto &first_day_assets = days_assets.find("2016-06-01")->second;
+
+  auto ids = std::vector<std::string>();
+  ids.reserve(first_day_assets.size());
+
+  for (const auto &asset : first_day_assets) {
+    ids.emplace_back(asset.id);
+  }
+
+  return ids;
+}
 
 IMPL_GETTER2(finmath::assets_day_values_t, SaveData::DaysAssets,
              assets_start_values) {

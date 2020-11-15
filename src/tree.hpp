@@ -17,6 +17,7 @@ struct TrucsInteressants {
   finmath::assets_day_values_t end_values;
   finmath::covariance_matrix_t cov_matrix;
   std::vector<finmath::nb_shares_t> nb_shares;
+  std::vector<std::string> assets_id;
 };
 
 std::tuple<compo_t, sharpe_t>

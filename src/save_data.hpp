@@ -4,6 +4,9 @@
 #include "jump/client.hpp"
 #include "jump/types_json_light.hpp"
 
+#include <tuple>
+#include <vector>
+
 #include <date/date.h>
 
 struct SaveData {
@@ -11,8 +14,19 @@ struct SaveData {
   using DaysAssets =
       std::unordered_map<DateStr, std::vector<CompactTypes::Asset>>;
 
+  using DaysAssetAndVolumes =
+      std::tuple<DaysAssets, std::vector<finmath::nb_shares_t>>;
+
   /** Get every asset of the investment period */
   static DaysAssets every_days_assets(JumpClient &client, bool verbose = false);
+
+  /** Get only the assets that are interesting and their volumes */
+  static DaysAssetAndVolumes
+  filtered_assets_and_volumes(std::optional<DaysAssets> &days_assets,
+                              JumpClient &client, bool verbose = false);
+
+  /** Get the assets ID */
+  static std::vector<std::string> assets_id(const DaysAssets &days_assets);
 
   /** Extract the assets values for the first investment day.
    * Store/Use the DaysAssets in the given parameter if the save file is not
