@@ -12,11 +12,17 @@
 
 static SaveData::DaysAssets filter_assets(SaveData::DaysAssets &assets) {
   const auto &first_day_assets = assets["2016-06-01"];
+  const auto &last_day_assets = assets["2020-09-30"];
   auto stock_index = std::vector<unsigned>();
+
   for (unsigned i = 0; i < first_day_assets.size(); ++i) {
-    if (first_day_assets[i].type.value == CompactTypes::AssetType::STOCK) {
-      stock_index.emplace_back(i);
-    }
+    if (first_day_assets[i].type.value != CompactTypes::AssetType::STOCK)
+      continue;
+    if (!first_day_assets[i].last_close_value.has_value() || !last_day_assets[i].last_close_value.has_value() ||
+        first_day_assets[i].last_close_value.value().value >= last_day_assets[i].last_close_value.value().value)
+        continue;
+
+    stock_index.emplace_back(i);
   }
 
   auto res = SaveData::DaysAssets();
@@ -28,6 +34,7 @@ static SaveData::DaysAssets filter_assets(SaveData::DaysAssets &assets) {
     }
     res.emplace(date, day_vec);
   }
+  std::clog << res.size() << std::endl;
 
   return res;
 }
