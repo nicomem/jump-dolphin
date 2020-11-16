@@ -6,6 +6,8 @@
 #include <cmath>
 #include <tuple>
 
+#include <iostream>
+
 #define OPT_STR(S) std::make_optional(std::string(S))
 
 using ParamOptKV =
@@ -115,8 +117,14 @@ PrivateJumpClient::get_asset_quote(RequiredParameter id,
   session_.SetUrl(url);
   session_.SetParameters(std::move(params));
 
-  auto j = json::parse(session_.Get().text);
-  return j.get<std::vector<JumpTypes::Quote>>();
+  auto t = session_.Get().text;
+  auto j = json::parse(t);
+  try {
+    auto r = j.get<std::vector<JumpTypes::Quote>>();
+    return r;
+  } catch (const std::exception &e) {
+    return std::vector<JumpTypes::Quote>();
+  }
 }
 
 JumpTypes::Portfolio
@@ -173,15 +181,19 @@ PrivateJumpClient::compute_ratio(JumpTypes::RatioParam &&ratio_param) {
 
   // Build and set the body
   json j_body = ratio_param;
-  session_.SetBody({j_body});
+
+  cpr::Body body = cpr::Body(std::move(j_body.dump()));
+  session_.SetBody(body);
 
   // Send the request
   auto j = json::parse(session_.Post().text);
 
   // Clear the body
-  session_.SetBody({});
+  session_.SetBody(cpr::Body());
 
-  return j.get<JumpTypes::AssetRatioMap>();
+  auto res = j.get<JumpTypes::AssetRatioMap>();
+
+  return res;
 }
 
 double PrivateJumpClient::get_currency_change_rate(
@@ -194,11 +206,17 @@ double PrivateJumpClient::get_currency_change_rate(
   session_.SetUrl(url);
   session_.SetParameters(std::move(params));
 
-  auto j = json::parse(session_.Get().text);
+  auto session_text = session_.Get().text;
+
+  if (session_text.empty())
+    return 1;
+
+  auto j = json::parse(session_text);
 
   // The rate value is a "double number" that uses a comma instead of a dot
   // So we must do the parsing ourselves...
   auto rate_str = j.at("rate").at("value").get<std::string>();
   std::replace(rate_str.begin(), rate_str.end(), ',', '.');
+
   return std::stod(rate_str);
 }

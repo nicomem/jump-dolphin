@@ -2,6 +2,8 @@
 
 #include <sstream>
 
+#include "types_json.hpp"
+
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
 
@@ -12,6 +14,10 @@ using json = nlohmann::json;
   case Other::ID:                                                              \
     value = ID;                                                                \
     break;
+
+#define TOJUMPSWITCH(ID)                                                       \
+  case ID:                                                                     \
+    return Other::ID;
 
 namespace CompactTypes {
 struct CurrencyCode {
@@ -37,6 +43,20 @@ struct CurrencyCode {
       CTORENUMSWITCH(NOK);
       CTORENUMSWITCH(SEK);
       CTORENUMSWITCH(USD);
+    }
+  }
+
+  JumpTypes::CurrencyCode to_jump() const {
+    using Other = JumpTypes::CurrencyCode;
+    switch (value) {
+      TOJUMPSWITCH(EUR);
+      TOJUMPSWITCH(GBP);
+      TOJUMPSWITCH(JPY);
+      TOJUMPSWITCH(NOK);
+      TOJUMPSWITCH(SEK);
+      TOJUMPSWITCH(USD);
+    default:
+      return Other::EUR;
     }
   }
 };
@@ -89,6 +109,43 @@ struct AssetType {
   }
 };
 
+struct AssetValue {
+  /** Value of a share of the asset */
+  double value;
+
+  /** Currency of the asset share */
+  CurrencyCode currency;
+
+  AssetValue() = default;
+  AssetValue(JumpTypes::AssetValue &&other)
+      : CTORMOVE(value), CTORMOVE(currency) {}
+};
+
+inline void to_json(json &j, const AssetValue &v) {
+  auto ss = std::stringstream("");
+
+  ss << (int)v.value;
+
+  // Create str representation of double with a comma instead of dot
+  auto v_str = fmt::format("{}", v.value);
+  auto dot = v_str.find('.');
+  ss << ',' << v_str.substr(dot + 1) << ' ' << v.currency.value;
+
+  j = json::string_t(ss.str());
+}
+
+inline void from_json(const json &j, AssetValue &v) {
+  auto stream = std::istringstream(j.get<std::string>());
+
+  std::string token;
+  std::getline(stream, token, ' ');
+
+  std::replace(token.begin(), token.end(), ',', '.');
+  v.value = std::stod(token);
+
+  v.currency = CurrencyCode(stream.get());
+}
+
 /** Version of an asset that have a more compact serialization */
 struct Asset {
   /** Identifiant en base de l'actif */
@@ -104,7 +161,7 @@ struct Asset {
   AssetType type;
 
   /** Dernière valeur de clôture */
-  std::optional<std::string> last_close_value;
+  std::optional<AssetValue> last_close_value;
 
   Asset() = default;
   Asset(JumpTypes::Asset &&other)
@@ -113,9 +170,16 @@ struct Asset {
 };
 
 inline void to_json(json &j, const Asset &v) {
-  auto j_str = json::string_t(
-      fmt::format("000{}|{}", v.id,
-                  (v.last_close_value.has_value() ? *v.last_close_value : "")));
+  auto val = std::string();
+  if (v.last_close_value) {
+    json j_val = *v.last_close_value;
+    val = j_val.dump();
+
+    // Remove quotes around json str
+    val = val.substr(1, val.size() - 2);
+  }
+
+  auto j_str = json::string_t(fmt::format("000{}|{}", v.id, val));
 
   j_str[0] = v.label.value;
   j_str[1] = v.type.value;
@@ -134,8 +198,15 @@ inline void from_json(const json &j, Asset &v) {
   std::getline(stream, token, '|');
   v.id = token;
 
-  token = stream.str();
-  v.last_close_value =
-      (token.empty() ? std::nullopt : std::make_optional(std::move(token)));
+  std::getline(stream, token, '|');
+  if (token.empty()) {
+    v.last_close_value = std::nullopt;
+  } else {
+    json j_val = token;
+    AssetValue val;
+    from_json(j_val, val);
+
+    v.last_close_value = val;
+  }
 }
 } // namespace CompactTypes

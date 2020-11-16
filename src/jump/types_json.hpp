@@ -2,6 +2,9 @@
 
 #include "types.hpp"
 
+#include <sstream>
+
+#include <fmt/format.h>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
@@ -97,13 +100,43 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
 NLOHMANN_JSON_SERIALIZE_ENUM(DynAmountType, {{DynAmountType::back, "back"},
                                              {DynAmountType::front, "front"}})
 
+inline void to_json(json &j, const AssetValue &v) {
+  auto ss = std::stringstream("");
+
+  ss << (int)v.value;
+
+  double n = v.value - (int)v.value;
+  if (n > 1e-8) {
+    ss << ',' << fmt::format("{}", n).substr(2);
+  }
+
+  json j_curr = v.currency;
+  ss << ' ' << j_curr;
+
+  j = json{{"type", "string"}, {"value", ss.str()}};
+}
+
+inline void from_json(const json &j, AssetValue &v) {
+  auto stream = std::istringstream(j.at("value").get<std::string>());
+
+  std::string token;
+  std::getline(stream, token, ' ');
+
+  std::replace(token.begin(), token.end(), ',', '.');
+  v.value = std::stod(token);
+
+  std::getline(stream, token, ' ');
+  json j_curr = token;
+  from_json(j_curr, v.currency);
+}
+
 inline void to_json(json &j, const Asset &v) {
   j = json{};
   TO_JSON_JVAL(j, v, "ASSET_DATABASE_ID", id);
   TO_JSON_JVAL(j, v, "LABEL", label);
   TO_JSON_JVAL(j, v, "CURRENCY", currency);
   TO_JSON_JVAL(j, v, "TYPE", type);
-  TO_JSON_OPT_JVAL(j, v, "LAST_CLOSE_VALUE_IN_CURR", last_close_value);
+  TO_JSON_OPT(j, v, "LAST_CLOSE_VALUE_IN_CURR", last_close_value);
 }
 
 inline void from_json(const json &j, Asset &v) {
@@ -111,34 +144,34 @@ inline void from_json(const json &j, Asset &v) {
   FROM_JSON_JVAL(j, v, "LABEL", label);
   FROM_JSON_JVAL(j, v, "CURRENCY", currency);
   FROM_JSON_JVAL(j, v, "TYPE", type);
-  FROM_JSON_OPT_JVAL(j, v, "LAST_CLOSE_VALUE_IN_CURR", last_close_value);
+  FROM_JSON_OPT(j, v, "LAST_CLOSE_VALUE_IN_CURR", last_close_value);
 }
 
 inline void to_json(json &j, const Quote &v) {
   j = json{};
-  TO_JSON(j, v, "close", close);
-  TO_JSON(j, v, "coupon", coupon);
-  TO_JSON(j, v, "date", date);
-  TO_JSON(j, v, "gross", gross);
-  TO_JSON(j, v, "high", high);
-  TO_JSON(j, v, "low", low);
-  TO_JSON(j, v, "nav", nav);
-  TO_JSON(j, v, "open", open);
-  TO_JSON(j, v, "return", v_return);
-  TO_JSON(j, v, "volume", volume);
+  // TO_JSON(j, v, "close", close);
+  // TO_JSON(j, v, "coupon", coupon);
+  // TO_JSON(j, v, "date", date);
+  // TO_JSON(j, v, "gross", gross);
+  // TO_JSON(j, v, "high", high);
+  // TO_JSON(j, v, "low", low);
+  // TO_JSON(j, v, "nav", nav);
+  // TO_JSON(j, v, "open", open);
+  // TO_JSON(j, v, "return", v_return);
+  j["volume"]["value"] = fmt::format("{}", v.volume);
 }
 
 inline void from_json(const json &j, Quote &v) {
-  FROM_JSON(j, v, "close", close);
-  FROM_JSON(j, v, "coupon", coupon);
-  FROM_JSON(j, v, "date", date);
-  FROM_JSON(j, v, "gross", gross);
-  FROM_JSON(j, v, "high", high);
-  FROM_JSON(j, v, "low", low);
-  FROM_JSON(j, v, "nav", nav);
-  FROM_JSON(j, v, "open", open);
-  FROM_JSON(j, v, "return", v_return);
-  FROM_JSON(j, v, "volume", volume);
+  // FROM_JSON(j, v, "close", close);
+  // FROM_JSON(j, v, "coupon", coupon);
+  // FROM_JSON(j, v, "date", date);
+  // FROM_JSON(j, v, "gross", gross);
+  // FROM_JSON(j, v, "high", high);
+  // FROM_JSON(j, v, "low", low);
+  // FROM_JSON(j, v, "nav", nav);
+  // FROM_JSON(j, v, "open", open);
+  // FROM_JSON(j, v, "return", v_return);
+  v.volume = std::stod(j.at("volume").at("value").get<std::string>());
 }
 
 inline void to_json(json &j, const portfolio_value &v) {
@@ -172,7 +205,7 @@ inline void to_json(json &j, const RatioParam &v) {
   TO_JSON(j, v, "ratio", ratio);
   TO_JSON(j, v, "asset", asset);
   TO_JSON_OPT(j, v, "benchmark", benchmark);
-  TO_JSON_OPT(j, v, "date", date);
+  TO_JSON_OPT(j, v, "start_date", start_date);
   TO_JSON_OPT(j, v, "end_date", end_date);
 }
 
@@ -180,7 +213,7 @@ inline void from_json(const json &j, RatioParam &v) {
   FROM_JSON(j, v, "ratio", ratio);
   FROM_JSON(j, v, "asset", asset);
   FROM_JSON_OPT(j, v, "benchmark", benchmark);
-  FROM_JSON_OPT(j, v, "date", date);
+  FROM_JSON_OPT(j, v, "start_date", start_date);
   FROM_JSON_OPT(j, v, "end_date", end_date);
 }
 

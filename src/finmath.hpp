@@ -2,7 +2,6 @@
 
 #include "jump/types.hpp"
 
-#include <array>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -12,9 +11,6 @@ namespace finmath {
 /** The number of days in the investment period */
 constexpr auto NB_DAYS = 365 * 4; // TODO
 
-/** The number of "useful/important" assets */
-constexpr auto NB_ASSETS = 40; // TODO
-
 /** The capital of the portfolio at the start of the investment */
 constexpr auto CAPITAL_START = 1; // TODO
 
@@ -22,7 +18,7 @@ constexpr auto CAPITAL_START = 1; // TODO
 using asset_day_value_t = double;
 
 /** The values for each day of an asset */
-using asset_period_values_t = std::array<asset_day_value_t, NB_DAYS>;
+using asset_period_values_t = std::vector<asset_day_value_t>;
 
 /** The number of shares of the asset in the portfolio. */
 using asset_share_t = unsigned;
@@ -40,11 +36,23 @@ struct portfolio_t {
 };
 
 /** The matrix of covariance for each pair of assets */
-using covariance_matrix_t =
-    std::array<std::array<double, NB_ASSETS>, NB_ASSETS>;
+using covariance_matrix_t = std::vector<std::vector<double>>;
 
 /** Value for each asset at a specific day */
-using assets_day_values_t = std::array<asset_day_value_t, NB_ASSETS>;
+using assets_day_values_t = std::vector<asset_day_value_t>;
+
+/** Value of currency */
+using currency_rate_t = double;
+
+/** Array of all currencies values for all currencies */
+using day_currency_rates_t =
+    std::array<currency_rate_t, JumpTypes::currencies.size()>;
+
+/** Map of currencies per dates */
+using days_currency_rates_t =
+    std::unordered_map<std::string, day_currency_rates_t>;
+
+using nb_shares_t = unsigned;
 
 /** Compute the covariance between two assets */
 double compute_covariance(const asset_period_values_t &x_values,

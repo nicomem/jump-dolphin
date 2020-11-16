@@ -28,6 +28,48 @@ enum class AssetType {
 
 enum class CurrencyCode { EUR, GBP, JPY, NOK, SEK, USD };
 
+inline unsigned index(CurrencyCode value) {
+  switch (value) {
+  case CurrencyCode::EUR:
+    return 0;
+
+    // case CurrencyCode::GBP:
+    //  return 1;
+
+  case CurrencyCode::JPY:
+    return 1;
+
+    // case CurrencyCode::NOK:
+    //  return 3;
+
+    // case CurrencyCode::SEK:
+    //  return 4;
+
+  case CurrencyCode::USD:
+    return 2;
+
+  default:
+    return 0;
+  }
+}
+
+static constexpr auto currencies = std::array{
+    CurrencyCode::EUR,
+    // CurrencyCode::GBP,
+    CurrencyCode::JPY,
+    // CurrencyCode::NOK,
+    // CurrencyCode::SEK,
+    CurrencyCode::USD,
+};
+
+struct AssetValue {
+  /** Value of a share of the asset */
+  double value;
+
+  /** Currency of the asset share */
+  CurrencyCode currency;
+};
+
 struct Asset {
   /** Identifiant en base de l'actif */
   std::string id;
@@ -42,7 +84,7 @@ struct Asset {
   AssetType type;
 
   /** Dernière valeur de clôture */
-  std::optional<std::string> last_close_value;
+  std::optional<AssetValue> last_close_value;
 };
 
 struct Ratio {
@@ -53,20 +95,20 @@ struct Ratio {
 };
 
 struct Quote {
-  float close;
-  unsigned coupon;
-  std::string date;
-  float gross;
-  float high;
-  float low;
-  float nav;
-  float open;
-  double pl;
+  // float close;
+  // unsigned coupon;
+  // std::string date;
+  // float gross;
+  // float high;
+  // float low;
+  // float nav;
+  // float open;
+  // double pl;
   // Since C++ does not support using reserved keywords as identifier
   // and JSON lib does not support field alias,
   // we must define the conversion functions ourselves
-  double v_return;
-  unsigned volume;
+  // double v_return;
+  double volume;
 };
 
 struct PortfolioAsset {
@@ -121,6 +163,9 @@ struct Portfolio {
 };
 
 struct RatioParam {
+  RatioParam() = default;
+  RatioParam(RatioParam &&) = default;
+
   /** Id des ratios à éxécuter */
   std::vector<int32_t> ratio;
 
@@ -133,7 +178,7 @@ struct RatioParam {
 
   /** Date de debut pour le ratio, Peut être nécessaire selon les ratios
    * end_date */
-  std::optional<std::string> date;
+  std::optional<std::string> start_date;
 
   /** Date de fin pour le ratio, Peut être nécessaire selon les ratios */
   std::optional<std::string> end_date;

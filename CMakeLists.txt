@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.17)
-project(GPGPU-ICP LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.14)
+project(dolphin LANGUAGES CXX)
 
 include(FetchContent)
 
@@ -70,6 +70,8 @@ set(SOURCES
     finmath.hpp
     save_data.cpp
     save_data.hpp
+    tree.cpp
+    tree.hpp
 
     jump/client.hpp
     jump/private_client.cpp
@@ -88,6 +90,7 @@ target_link_libraries(dolphin PRIVATE
     cpr::cpr
     fmt::fmt
     date::date
+    pthread
 )
 
 # Set C++ macro for bench to locate files
