@@ -70,6 +70,8 @@ static TrucsInteressants get_the_trucs_interessants(JumpClient &client) {
   auto assets_capital = std::vector<double>();
   assets_capital.reserve(start_values.size());
   for (auto i = 0u; i < start_values.size(); ++i) {
+    std::cerr << nb_shares[i] << '\n';
+    std::cerr << start_values[i] << '\n';
     assets_capital.emplace_back(start_values[i] * nb_shares[i]);
   }
 

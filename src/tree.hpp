@@ -11,10 +11,10 @@ using compo_t = std::vector<std::tuple<nb_shares_t, share_index_t>>;
 using sharpe_t = double;
 
 // Min number of assets in portfolio
-constexpr unsigned min_portfolio_size = 15; // 15;
+constexpr unsigned min_portfolio_size = 40; // 15;
 
 // Max number of assets in portfolio
-constexpr unsigned max_portfolio_size = 15; // 40;
+constexpr unsigned max_portfolio_size = 40; // 40;
 
 // Min percent of the portfolio of a share
 constexpr double min_share_percent = 0.01;

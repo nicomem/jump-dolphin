@@ -241,12 +241,11 @@ IMPL_GETTER5(SaveData::DaysAssetAndVolumes, filtered_assets_and_volumes) {
         std::make_optional(std::string("2016-06-01")));
 
     // If nothing can be bought, the asset is not interesting
-    if (quotes.empty() || quotes[0].volume == 0) {
+    if (quotes.empty() || quotes[0].volume < 2) {
       continue;
-    } else {
-      volumes.emplace_back(quotes[0].volume);
     }
 
+    volumes.emplace_back(quotes[0].volume);
     stock_index.emplace_back(i);
   }
 
@@ -291,12 +290,14 @@ IMPL_GETTER5(SaveData::DaysAssetAndVolumes, filtered_assets_and_volumes) {
 
     if (sharpe >= 0.5) {
       stock_index[j] = stock_index[i];
+      volumes[j] = volumes[i];
       ++j;
     }
   }
 
   auto last_size = stock_index.size();
   stock_index.resize(j);
+  volumes.resize(j);
 
   if (verbose) {
     std::clog << "2nd filtering: " << j << " / " << last_size << std::endl;
@@ -313,14 +314,7 @@ IMPL_GETTER5(SaveData::DaysAssetAndVolumes, filtered_assets_and_volumes) {
     res.emplace(date, day_vec);
   }
 
-  // Also remove the assets volumes
-  auto volumes2 = std::vector<finmath::nb_shares_t>();
-  volumes2.reserve(stock_index.size());
-  for (auto i : stock_index) {
-    volumes2.push_back(volumes[i]);
-  }
-
-  return std::make_tuple(res, volumes2);
+  return std::make_tuple(res, volumes);
 }
 IMPL_METHOD5(SaveData::DaysAssetAndVolumes, filtered_assets_and_volumes)
 

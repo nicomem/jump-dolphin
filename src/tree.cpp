@@ -18,6 +18,7 @@ static sharpe_t fill_compo(const TrucsInteressants &trucs, compo_t &compo,
   // Find the asset with the min capital
   double min_cap = INFINITY;
   for (const auto &[_nb_shares, i_asset] : compo) {
+    // std::cerr << trucs.assets_capital[i_asset] << '\n';
     min_cap = std::min(min_cap, trucs.assets_capital[i_asset]);
   }
 
@@ -36,13 +37,14 @@ static sharpe_t fill_compo(const TrucsInteressants &trucs, compo_t &compo,
     auto share_capital = nb_shares * trucs.start_values[i_asset];
     shares_capital.push_back(share_capital);
 
-    auto true_ratio = share_capital / compo_cap;
-    if (true_ratio < min_share_percent)
-      return -INFINITY;
+    // Do not check the ratios here, tweak manually the best
+    // auto true_ratio = share_capital / compo_cap;
+    // if (true_ratio < min_share_percent)
+    //   return -INFINITY;
 
-    // Should always be false, but just to be sure
-    if (true_ratio > max_share_percent)
-      return -INFINITY;
+    // // Should always be false, but just to be sure
+    // if (true_ratio > max_share_percent)
+    //   return -INFINITY;
   }
 
   double sell_value = 0;
@@ -66,7 +68,7 @@ static sharpe_t fill_compo(const TrucsInteressants &trucs, compo_t &compo,
 
       vol += shares_capital[i] * tmp;
     }
-    vol = std::sqrt(vol / (compo_cap * compo_cap));
+    vol = std::sqrt(vol) / compo_cap;
   }
 
   // Portfolio is valid, compute sharpe
@@ -126,6 +128,7 @@ max_compo_tree2(const TrucsInteressants &trucs,
   do {
     // auto t1 = std::chrono::system_clock::now();
     auto compo_sharpe = fill_compo(trucs, compo, shares_capital);
+
     // auto t2 = std::chrono::system_clock::now();
     // std::cerr << std::chrono::duration<double>(t2 - t1).count() << '\n';
     if (compo_sharpe > best_sharpe) {
