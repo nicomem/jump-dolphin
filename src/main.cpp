@@ -1,3 +1,4 @@
+#include "check.hpp"
 #include "jump/client.hpp"
 #include "jump/types_json.hpp"
 #include "save_data.hpp"
@@ -10,6 +11,55 @@
 #include <CLI/CLI.hpp>
 
 constexpr auto VERBOSE = true;
+
+namespace FinalPortfolio {
+static std::vector<JumpTypes::portfolio_value> values = {
+    {JumpTypes::PortfolioAsset{1917, 441}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1918, 487}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1930, 126}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1931, 21}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1932, 78}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1934, 25}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1956, 231}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1958, 15}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2082, 87}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1963, 148}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1965, 16}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1966, 298}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1971, 39}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1973, 561}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1987, 182}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1989, 521}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1990, 52}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1995, 40}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2000, 90}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2001, 127}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1507, 136}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2090, 25}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2011, 85}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2015, 76}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2033, 735}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2034, 281}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2035, 2581}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2046, 45}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2023, 5378}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1571, 27}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2100, 16}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1595, 13}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1603, 15}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1619, 525}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2110, 24}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2112, 53}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1731, 30}, std::nullopt},
+    {JumpTypes::PortfolioAsset{1756, 36}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2120, 95}, std::nullopt},
+    {JumpTypes::PortfolioAsset{2106, 52}, std::nullopt},
+};
+static JumpTypes::Portfolio portfolio = {std::string("EPITA_PTF_6"),
+                                         JumpTypes::CurrencyCode::EUR,
+                                         JumpTypes::DynAmountType::front,
+                                         {{std::string("2016-06-01"), values}}};
+} // namespace FinalPortfolio
 
 #define CHECK_CORRUPTION(S1, S2)                                               \
   do {                                                                         \
@@ -70,8 +120,6 @@ static TrucsInteressants get_the_trucs_interessants(JumpClient &client) {
   auto assets_capital = std::vector<double>();
   assets_capital.reserve(start_values.size());
   for (auto i = 0u; i < start_values.size(); ++i) {
-    std::cerr << nb_shares[i] << '\n';
-    std::cerr << start_values[i] << '\n';
     assets_capital.emplace_back(start_values[i] * nb_shares[i]);
   }
 
@@ -145,8 +193,63 @@ max_compo_tree_multithread(const TrucsInteressants &trucs) {
                            });
 }
 
+static void push_portfolio(JumpClient &client) {
+  auto p = FinalPortfolio::portfolio;
+  client.put_portfolio_compo(std::string("1825"), std::move(p));
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+  p = FinalPortfolio::portfolio;
+  client.put_portfolio_compo(std::string("1825"), std::move(p));
+
+  auto r = client.get_asset(std::string("1825"),
+                            std::make_optional(std::string("2016-06-01")));
+  std::cout << "Last close value: " << r.last_close_value->value << '\n';
+
+  // Get the sharpes
+  auto ratios = std::vector<int32_t>();
+  ratios.emplace_back(12);
+
+  auto assets_id = std::vector<int32_t>();
+  assets_id.emplace_back(1825);
+
+  JumpTypes::RatioParam params = JumpTypes::RatioParam();
+  params.ratio = ratios;
+  params.asset = assets_id;
+  params.benchmark = std::nullopt;
+  params.start_date = std::string("2016-06-01");
+  params.end_date = std::string("2020-09-30");
+
+  // Get and parse the sharpes
+  auto ratios_sharpe = client.compute_ratio(std::move(params));
+  json sharpe_j = ratios_sharpe;
+
+  std::cout << "Sharpe: " << sharpe_j.dump(2) << '\n';
+}
+
+static void check_portfolio(const TrucsInteressants &trucs) {
+  // Build the composition from the portfolio values
+  auto compo = compo_t();
+  compo.reserve(FinalPortfolio::values.size());
+  for (const auto &[vals_opt, _] : FinalPortfolio::values) {
+    auto [id, nb_shares] = *vals_opt;
+
+    auto it = std::find(trucs.assets_id.begin(), trucs.assets_id.end(),
+                        std::to_string(id));
+    if (it == trucs.assets_id.end()) {
+      std::cerr << "Could not find asset " << id << " in the trucs\n";
+      exit(EXIT_FAILURE);
+    }
+
+    auto index = std::distance(trucs.assets_id.begin(), it);
+    compo.emplace_back(nb_shares, index);
+  }
+
+  check_compo(trucs, compo, true);
+}
+
 int main(int argc, char *argv[]) {
-  std::string username, password;
+  std::string username, password, mode;
 
   // Parse the command line arguments
   auto app = CLI::App{"Dolphin"};
@@ -154,6 +257,10 @@ int main(int argc, char *argv[]) {
       ->required();
   app.add_option("-p,--password", password, "JUMP account password")
       ->required();
+  app.add_option("-m,--mode", mode, "The action to do")
+      ->required()
+      ->check(CLI::IsMember({"check", "push", "compute"}));
+
   CLI11_PARSE(app, argc, argv);
 
   // Create the JUMP API client
@@ -162,15 +269,22 @@ int main(int argc, char *argv[]) {
   // Load or fetch the pre-calculated data
   auto trucs = get_the_trucs_interessants(*client);
 
-  // Try to create the best portfolio
-  std::clog << "max_compo_tree\n";
-  auto [best_compo, best_sharpe] = max_compo_tree_multithread(trucs);
+  if (mode == "check") {
+    check_portfolio(trucs);
+  } else if (mode == "push") {
+    push_portfolio(*client);
+  } else {
+    // Try to create the best portfolio
+    std::clog << "max_compo_tree\n";
+    auto [best_compo, best_sharpe] = max_compo_tree_multithread(trucs);
 
-  // Display the best portfolio found
-  std::cout << "\nBest portfolio found:\n";
-  std::cout << "Sharpe: " << best_sharpe << '\n';
-  std::cout << "List of (asset_id, bought_shares):\n";
-  for (const auto &[nb_shares, i_asset] : best_compo) {
-    std::cout << "- " << trucs.assets_id[i_asset] << "\t" << nb_shares << '\n';
+    // Display the best portfolio found
+    std::cout << "\nBest portfolio found:\n";
+    std::cout << "Sharpe: " << best_sharpe << '\n';
+    std::cout << "List of (asset_id, bought_shares):\n";
+    for (const auto &[nb_shares, i_asset] : best_compo) {
+      std::cout << "- " << trucs.assets_id[i_asset] << "\t" << nb_shares
+                << '\n';
+    }
   }
 }

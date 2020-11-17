@@ -35,6 +35,9 @@ struct TrucsInteressants {
   std::vector<double> assets_capital;
 };
 
+/** Compute the portfolio capital at the start of the investment */
+double portolio_capital(const TrucsInteressants &trucs, const compo_t &compo);
+
 std::tuple<compo_t, sharpe_t>
 max_compo_tree2(const TrucsInteressants &trucs,
                 finmath::asset_period_values_t &shares_capital, compo_t &compo,

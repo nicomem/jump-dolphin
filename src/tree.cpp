@@ -3,8 +3,7 @@
 #include <chrono>
 #include <iostream>
 
-static double portolio_capital(const TrucsInteressants &trucs,
-                               const compo_t &compo) {
+double portolio_capital(const TrucsInteressants &trucs, const compo_t &compo) {
   double r = 0;
   for (const auto &[nb_shares, i_asset] : compo) {
     r += nb_shares * trucs.start_values[i_asset];

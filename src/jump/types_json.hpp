@@ -188,7 +188,7 @@ inline void from_json(const json &j, portfolio_value &v) {
 inline void to_json(json &j, const Portfolio &v) {
   j = json{};
   TO_JSON(j, v, "label", label);
-  TO_JSON(j.at("currency"), v, "code", currency);
+  j["currency"]["code"] = v.currency;
   TO_JSON(j, v, "type", type);
   TO_JSON(j, v, "values", values);
 }
