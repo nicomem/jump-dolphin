@@ -14,21 +14,22 @@ bool check_compo(const TrucsInteressants &trucs, const compo_t &compo,
     auto share_capital = nb_shares * trucs.start_values[i_asset];
     auto true_ratio = share_capital / compo_cap;
 
-    std::cout << "- " << trucs.assets_id[i_asset] << ": "
-              << std::setprecision(5) << 100 * true_ratio << "%\n";
+    if (verbose) {
+      std::cout << "- " << trucs.assets_id[i_asset] << " (" << std::setw(4)
+                << nb_shares << "): " << std::setprecision(3)
+                << 100 * true_ratio << "%";
+    }
 
     if (true_ratio < min_share_percent || true_ratio > max_share_percent) {
       found_error = true;
 
       if (verbose) {
-        std::cerr << "ERROR: Asset " << trucs.assets_id[i_asset]
-                  << " ratio: " << true_ratio << '\n';
-        std::cerr << "--> Bought " << nb_shares << " * "
-                  << trucs.start_values[i_asset] << "€ = " << share_capital
-                  << '\n';
+        std::cout << "\t!!!ERROR!!!\n";
       } else {
         return false;
       }
+    } else if (verbose) {
+      std::cout << '\n';
     }
   }
 

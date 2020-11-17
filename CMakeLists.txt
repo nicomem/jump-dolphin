@@ -70,6 +70,8 @@ set(SOURCES
     check.hpp
     finmath.cpp
     finmath.hpp
+    optimizer.cpp
+    optimizer.hpp
     save_data.cpp
     save_data.hpp
     tree.cpp
