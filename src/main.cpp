@@ -1,8 +1,8 @@
 #include "check.hpp"
 #include "jump/client.hpp"
 #include "jump/types_json.hpp"
-#include "optimizer.hpp"
 #include "save_data.hpp"
+#include "stochastic.hpp"
 #include "tree.hpp"
 
 #include <cassert>
@@ -256,12 +256,12 @@ static void push_portfolio(JumpClient &client, JumpTypes::Portfolio portfolio) {
   auto p = portfolio;
   client.put_portfolio_compo(std::string("1825"), std::move(p));
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   p = portfolio;
   client.put_portfolio_compo(std::string("1825"), std::move(p));
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   auto r = client.get_asset(std::string("1825"),
                             std::make_optional(std::string("2016-06-01")));
@@ -278,31 +278,26 @@ static void optimize_portfolio(const TrucsInteressants &trucs,
                                JumpClient &client) {
   auto compo = FinalPortfolio::compo(trucs);
 
-  auto sharpe_ratio = FinalPortfolio::get_sharpe(client);
-  std::cout << "\nOld portfolio:\n";
-  std::cout << "Sharpe: " << sharpe_ratio << '\n';
-  std::cout << "---\n";
+  auto old_sharpe = FinalPortfolio::get_sharpe(client);
 
+  std::cout << "---\n";
   auto new_compo = optimize_compo_stochastic(trucs, compo);
 
   if (!check_compo(trucs, new_compo, true)) {
     std::cerr << "Optimized compo is not valid\n";
     exit(EXIT_FAILURE);
   }
+  std::cout << "---\n";
 
   // Push the portfolio to compute the sharpe
   auto new_portfolio = FinalPortfolio::to_portfolio(trucs, new_compo);
   push_portfolio(client, new_portfolio);
 
   // Get the sharpes
-  sharpe_ratio = FinalPortfolio::get_sharpe(client);
+  auto new_sharpe = FinalPortfolio::get_sharpe(client);
 
-  std::cout << "\nOptimized portfolio:\n";
-  std::cout << "Sharpe: " << sharpe_ratio << '\n';
-  std::cout << "List of (asset_id, bought_shares):\n";
-  for (const auto &[nb_shares, i_asset] : new_compo) {
-    std::cout << "- " << trucs.assets_id[i_asset] << "\t" << nb_shares << '\n';
-  }
+  std::cout << "Old portfolio JUMP Sharpe: " << old_sharpe << '\n';
+  std::cout << "Optimized portfolio JUMP Sharpe: " << new_sharpe << '\n';
 
   // Re-push the old portfolio
   push_portfolio(client, FinalPortfolio::portfolio);
