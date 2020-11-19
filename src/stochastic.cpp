@@ -54,7 +54,7 @@ sharpe_t recompute_sharpe(SharpeCache &cache, unsigned i_compo_changed,
 
   cache.end_capital += dshares * cache.trucs.end_values[i_asset];
 
-  if (only_update_cache)
+  if (only_update_cache || !check_compo_cache(cache))
     return -INFINITY;
 
   auto compo_size = cache.compo.size();
@@ -105,7 +105,7 @@ compo_t optimize_compo_stochastic(const TrucsInteressants &trucs,
   for (auto _i = 0u; _i < n_iter; ++_i) {
     int dx;
     do {
-      dx = 10 * dshare(gen);
+      dx = 25 * dshare(gen);
     } while (dx == 0);
 
     share_index_t i = dasset(gen);
@@ -115,10 +115,10 @@ compo_t optimize_compo_stochastic(const TrucsInteressants &trucs,
     dx = std::max<int>(-shares + 1, dx);
     dx = std::min<int>(dx, trucs.nb_shares[i_asset] - shares);
 
-    auto sharpe = recompute_sharpe(cache, i, dx, false);
+    auto sharpe_opt = recompute_sharpe(cache, i, dx, false);
     // Set best sharpe if better sharpe and still valid
-    if (sharpe > best_sharpe && check_compo_cache(cache)) {
-      best_sharpe = sharpe;
+    if (sharpe_opt > best_sharpe) {
+      best_sharpe = sharpe_opt;
     } else {
       // Undo action
       recompute_sharpe(cache, i, -dx, true);

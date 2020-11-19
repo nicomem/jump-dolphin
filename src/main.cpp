@@ -6,6 +6,8 @@
 #include "tree.hpp"
 
 #include <cassert>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <thread>
 
@@ -14,57 +16,44 @@
 constexpr auto VERBOSE = true;
 
 namespace FinalPortfolio {
-static std::vector<JumpTypes::portfolio_value> values = {
-    {JumpTypes::PortfolioAsset{1917, 288}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1918, 310}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1930, 44}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1931, 7}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1932, 26}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1934, 9}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1956, 369}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1958, 50}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2082, 31}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1963, 61}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1965, 6}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1966, 170}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1971, 59}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1973, 390}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1987, 85}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1989, 340}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1990, 25}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1995, 14}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2000, 90}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2001, 52}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1507, 75}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2090, 9}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2011, 28}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2015, 247}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2033, 506}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2034, 718}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2035, 2590}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2046, 15}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2023, 5878}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1571, 9}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2100, 6}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1595, 5}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1603, 6}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1619, 368}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2110, 9}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2112, 174}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1731, 10}, std::nullopt},
-    {JumpTypes::PortfolioAsset{1756, 12}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2120, 69}, std::nullopt},
-    {JumpTypes::PortfolioAsset{2106, 18}, std::nullopt},
-};
-static JumpTypes::Portfolio portfolio = {std::string("EPITA_PTF_6"),
-                                         JumpTypes::CurrencyCode::EUR,
-                                         JumpTypes::DynAmountType::front,
-                                         {{std::string("2016-06-01"), values}}};
+static auto portfolio_folder = std::filesystem::current_path() / "portfolio";
+static auto best_portfolio_path = portfolio_folder / "best_portfolio.json";
+static auto new_portfolio_path = portfolio_folder / "new_portfolio.json";
 
-compo_t compo(const TrucsInteressants &trucs) {
+static JumpTypes::Portfolio load_portfolio(const std::filesystem::path &path) {
+  auto f = std::ifstream(path);
+  if (!f.good()) {
+    std::cerr << "Could not load portfolio in '" << path << "'\n";
+    exit(EXIT_FAILURE);
+  }
+
+  json j;
+  f >> j;
+
+  return j.get<JumpTypes::Portfolio>();
+}
+
+static void save_portfolio(const std::filesystem::path &path,
+                           const JumpTypes::Portfolio &new_portfolio) {
+  std::filesystem::create_directory(portfolio_folder);
+
+  auto f = std::ofstream(path);
+  if (!f.good()) {
+    std::cerr << "Could not save portfolio in '" << path << "'\n";
+    exit(EXIT_FAILURE);
+  }
+
+  f << json(new_portfolio) << '\n';
+}
+
+compo_t best_compo(const TrucsInteressants &trucs) {
+  const auto portfolio =
+      FinalPortfolio::load_portfolio(FinalPortfolio::best_portfolio_path);
+  const auto &values = portfolio.values.find("2016-06-01")->second;
+
   auto compo = compo_t();
-  compo.reserve(FinalPortfolio::values.size());
-  for (const auto &[vals_opt, _] : FinalPortfolio::values) {
+  compo.reserve(values.size());
+  for (const auto &[vals_opt, _] : values) {
     auto [id, nb_shares] = *vals_opt;
 
     auto it = std::find(trucs.assets_id.begin(), trucs.assets_id.end(),
@@ -252,7 +241,10 @@ max_compo_tree_multithread(const TrucsInteressants &trucs) {
                            });
 }
 
-static void push_portfolio(JumpClient &client, JumpTypes::Portfolio portfolio) {
+/** Push the portfolio in `new_portfolio_path` and copy it to
+ * `best_portfolio_path` */
+static void push_portfolio(JumpClient &client,
+                           const JumpTypes::Portfolio &portfolio) {
   auto p = portfolio;
   client.put_portfolio_compo(std::string("1825"), std::move(p));
 
@@ -269,14 +261,14 @@ static void push_portfolio(JumpClient &client, JumpTypes::Portfolio portfolio) {
 }
 
 static void check_portfolio(const TrucsInteressants &trucs) {
-  auto compo = FinalPortfolio::compo(trucs);
+  auto compo = FinalPortfolio::best_compo(trucs);
 
   check_compo(trucs, compo, true);
 }
 
 static void optimize_portfolio(const TrucsInteressants &trucs,
                                JumpClient &client) {
-  auto compo = FinalPortfolio::compo(trucs);
+  auto compo = FinalPortfolio::best_compo(trucs);
 
   auto old_sharpe = FinalPortfolio::get_sharpe(client);
 
@@ -289,8 +281,15 @@ static void optimize_portfolio(const TrucsInteressants &trucs,
   }
   std::cout << "---\n";
 
-  // Push the portfolio to compute the sharpe
   auto new_portfolio = FinalPortfolio::to_portfolio(trucs, new_compo);
+  auto best_portfolio =
+      FinalPortfolio::load_portfolio(FinalPortfolio::best_portfolio_path);
+
+  // Save the portfolio
+  FinalPortfolio::save_portfolio(FinalPortfolio::new_portfolio_path,
+                                 new_portfolio);
+
+  // Push the portfolio to compute the sharpe
   push_portfolio(client, new_portfolio);
 
   // Get the sharpes
@@ -300,7 +299,7 @@ static void optimize_portfolio(const TrucsInteressants &trucs,
   std::cout << "Optimized portfolio JUMP Sharpe: " << new_sharpe << '\n';
 
   // Re-push the old portfolio
-  push_portfolio(client, FinalPortfolio::portfolio);
+  push_portfolio(client, best_portfolio);
 }
 
 int main(int argc, char *argv[]) {
@@ -314,7 +313,7 @@ int main(int argc, char *argv[]) {
       ->required();
   app.add_option("-m,--mode", mode, "The action to do")
       ->required()
-      ->check(CLI::IsMember({"check", "push", "compute", "optimize"}));
+      ->check(CLI::IsMember({"check", "push", "compute-brute", "optimize"}));
 
   CLI11_PARSE(app, argc, argv);
 
@@ -329,7 +328,11 @@ int main(int argc, char *argv[]) {
   } else if (mode == "optimize") {
     optimize_portfolio(trucs, *client);
   } else if (mode == "push") {
-    push_portfolio(*client, FinalPortfolio::portfolio);
+    auto new_portfolio =
+        FinalPortfolio::load_portfolio(FinalPortfolio::new_portfolio_path);
+    FinalPortfolio::save_portfolio(FinalPortfolio::best_portfolio_path,
+                                   new_portfolio);
+    push_portfolio(*client, new_portfolio);
     std::cout << "Sharpe: " << FinalPortfolio::get_sharpe(*client);
   } else {
     // Try to create the best portfolio
