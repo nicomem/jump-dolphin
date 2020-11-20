@@ -14,14 +14,14 @@ sharpe_t compute_sharpe_init_chache(const TrucsInteressants &trucs,
   // Set the start values & capital
   cache.start_capital = 0;
   for (const auto &[nb_shares, i_asset] : compo) {
-    cache.start_capital +=
-        cache.buy_values.emplace_back(nb_shares * trucs.start_values[i_asset]);
+    cache.start_capital += cache.buy_values.emplace_back(
+        (double)nb_shares * trucs.start_values[i_asset]);
   }
 
   // Set the end values & capital
   cache.end_capital = 0;
   for (const auto &[nb_shares, i_asset] : compo) {
-    cache.end_capital += nb_shares * trucs.end_values[i_asset];
+    cache.end_capital += (double)nb_shares * trucs.end_values[i_asset];
   }
 
   double vol = 0;
@@ -48,7 +48,7 @@ sharpe_t recompute_sharpe(SharpeCache &cache, unsigned i_compo_changed,
   shares += dshares;
 
   // Update start & end capital
-  auto dbuy_value = dshares * cache.trucs.start_values[i_asset];
+  auto dbuy_value = (double)dshares * cache.trucs.start_values[i_asset];
   cache.buy_values[i_compo_changed] += dbuy_value;
   cache.start_capital += dbuy_value;
 
@@ -89,8 +89,8 @@ bool check_compo_cache(const SharpeCache &cache) {
   return true;
 }
 
-compo_t optimize_compo_stochastic(const TrucsInteressants &trucs,
-                                  compo_t compo) {
+std::tuple<compo_t, sharpe_t>
+optimize_compo_stochastic(const TrucsInteressants &trucs, compo_t compo) {
   constexpr auto n_iter = 1'000'000u;
 
   std::random_device rd;
@@ -98,7 +98,6 @@ compo_t optimize_compo_stochastic(const TrucsInteressants &trucs,
 
   auto cache = SharpeCache(trucs, compo);
   auto best_sharpe = compute_sharpe_init_chache(trucs, compo, cache);
-  std::cerr << "Program sharpe before opti: " << best_sharpe << '\n';
 
   auto dshare = std::normal_distribution<double>(0, 1);
   auto dasset = std::uniform_int_distribution<unsigned>(0, compo.size() - 1);
@@ -125,11 +124,82 @@ compo_t optimize_compo_stochastic(const TrucsInteressants &trucs,
     }
   }
 
-  std::cerr << "Program sharpe after opti: " << best_sharpe << '\n';
-  return compo;
+  return std::make_tuple(compo, best_sharpe);
 }
 
-compo_t find_best_compo_stochastic(const TrucsInteressants &trucs) {
-  // TODO
-  return compo_t();
+static void swap_low_capital_ratio(const TrucsInteressants &trucs,
+                                   compo_t &compo, std::mt19937 &gen,
+                                   std::vector<bool> &assets_selected) {
+  // Build vector of selected assets
+  assets_selected.resize(trucs.assets_capital.size());
+  std::fill(assets_selected.begin(), assets_selected.end(), false);
+
+  auto start_capital = 0;
+  for (const auto &[shares, i_asset] : compo) {
+    assets_selected[i_asset] = true;
+    start_capital += (double)shares * trucs.start_values[i_asset];
+  }
+
+  auto asset_gen = std::uniform_int_distribution<unsigned>(0, compo.size() - 1);
+
+  // Swap those with low capital ratios
+  constexpr auto min_ratio = 0.015;
+  for (auto &[shares, i_asset] : compo) {
+    auto true_ratio =
+        ((double)shares * trucs.start_values[i_asset]) / start_capital;
+    if (true_ratio >= min_ratio)
+      continue;
+
+    // Select random new asset
+    unsigned new_asset;
+    do {
+      new_asset = asset_gen(gen);
+    } while (assets_selected[new_asset]);
+
+    // Swap
+    assets_selected[i_asset] = false;
+    assets_selected[new_asset] = true;
+    i_asset = new_asset;
+  }
+
+  // Reset shares to respect the rules
+  // Find the asset with the min capital
+  double min_cap = INFINITY;
+  for (const auto &[_nb_shares, i_asset] : compo) {
+    min_cap = std::min(min_cap, trucs.assets_capital[i_asset]);
+  }
+
+  // Fill the portfolio
+  auto max_cap = (max_share_percent / min_share_percent) * min_cap;
+  for (auto &[nb_shares, i_asset] : compo) {
+    nb_shares = max_cap / trucs.start_values[i_asset];
+  }
+}
+
+compo_t find_best_compo_stochastic(const TrucsInteressants &trucs,
+                                   compo_t compo) {
+  constexpr auto nb_iter = 10u;
+
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  auto assets_selected = std::vector<bool>();
+
+  auto [best_compo, best_sharpe] = optimize_compo_stochastic(trucs, compo);
+  std::clog << "Start compute sharpe: " << best_sharpe << '\n';
+  for (auto _i = 0u; _i < nb_iter; ++_i) {
+    // Swap those with low capital ratios with random ones
+    compo = best_compo;
+    swap_low_capital_ratio(trucs, compo, gen, assets_selected);
+
+    auto [new_compo, new_sharpe] = optimize_compo_stochastic(trucs, compo);
+    std::cout << new_sharpe << "\n";
+    if (new_sharpe > best_sharpe) {
+      std::clog << "New best compute sharpe: " << new_sharpe << '\n';
+      best_compo = new_compo;
+      best_sharpe = new_sharpe;
+    }
+  }
+
+  std::clog << "Final compute sharpe: " << best_sharpe << '\n';
+  return compo;
 }

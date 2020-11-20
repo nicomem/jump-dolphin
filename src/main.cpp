@@ -273,7 +273,7 @@ static void optimize_portfolio(const TrucsInteressants &trucs,
   auto old_sharpe = FinalPortfolio::get_sharpe(client);
 
   std::cout << "---\n";
-  auto new_compo = optimize_compo_stochastic(trucs, compo);
+  auto new_compo = find_best_compo_stochastic(trucs, compo);
 
   if (!check_compo(trucs, new_compo, true)) {
     std::cerr << "Optimized compo is not valid\n";

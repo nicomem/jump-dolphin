@@ -33,8 +33,9 @@ bool check_compo_cache(const SharpeCache &cache);
  * If the given composition respects the %NAV rule, the resulting
  * composition will also respect it.
  */
-compo_t optimize_compo_stochastic(const TrucsInteressants &trucs,
-                                  compo_t compo);
+std::tuple<compo_t, sharpe_t>
+optimize_compo_stochastic(const TrucsInteressants &trucs, compo_t compo);
 
 /** Try to find the best composition by using the stochastic optimizer */
-compo_t find_best_compo_stochastic(const TrucsInteressants &trucs);
+compo_t find_best_compo_stochastic(const TrucsInteressants &trucs,
+                                   compo_t compo);
