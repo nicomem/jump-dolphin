@@ -45,35 +45,55 @@ sharpe_t compute_sharpe_init_chache(const TrucsInteressants &trucs,
 sharpe_t recompute_sharpe(SharpeCache &cache, unsigned i_compo_changed,
                           double dshares, bool only_update_cache) {
   auto &[shares, i_asset] = cache.compo[i_compo_changed];
-  shares += dshares;
+  shares += (unsigned)dshares;
 
-  // Update start & end capital
-  auto dbuy_value = (double)dshares * cache.trucs.start_values[i_asset];
-  cache.buy_values[i_compo_changed] += dbuy_value;
-  cache.start_capital += dbuy_value;
+  // Initialize the vectors
+  auto compo_size = cache.compo.size();
+  cache.buy_values.resize(0);
+  cache.buy_values.reserve(compo_size);
 
-  cache.end_capital += dshares * cache.trucs.end_values[i_asset];
+  // Set the start values & capital
+  cache.start_capital = 0;
+  for (const auto &[nb_shares, i_asset] : cache.compo) {
+    cache.start_capital += cache.buy_values.emplace_back(
+        (double)nb_shares * cache.trucs.start_values[i_asset]);
+  }
+
+  // Set the end values & capital
+  cache.end_capital = 0;
+  for (const auto &[nb_shares, i_asset] : cache.compo) {
+    cache.end_capital += (double)nb_shares * cache.trucs.end_values[i_asset];
+  }
+
+  // // Update start & end capital
+  // auto dbuy_value = (double)dshares * cache.trucs.start_values[i_asset];
+  // cache.buy_values[i_compo_changed] += dbuy_value;
+  // cache.start_capital += dbuy_value;
+
+  // cache.end_capital += dshares * cache.trucs.end_values[i_asset];
 
   if (only_update_cache || !check_compo_cache(cache))
     return -INFINITY;
 
-  auto compo_size = cache.compo.size();
-  double vol = 0;
-  for (auto i = 0u; i < compo_size; ++i) {
-    auto asset1 = std::get<1>(cache.compo[i]);
-    const auto &cov_vec = cache.trucs.cov_matrix[asset1];
+  return 42;
 
-    double subvol = 0;
-    for (auto j = 0u; j < compo_size; ++j) {
-      auto asset2 = std::get<1>(cache.compo[j]);
+  // auto compo_size = cache.compo.size();
+  // double vol = 0;
+  // for (auto i = 0u; i < compo_size; ++i) {
+  //   auto asset1 = std::get<1>(cache.compo[i]);
+  //   const auto &cov_vec = cache.trucs.cov_matrix[asset1];
 
-      subvol += cache.buy_values[j] * cov_vec[asset2];
-    }
-    vol -= cache.buy_values[i] * subvol;
-  }
+  //   double subvol = 0;
+  //   for (auto j = 0u; j < compo_size; ++j) {
+  //     auto asset2 = std::get<1>(cache.compo[j]);
 
-  // Compute the sharpe
-  return (cache.end_capital - cache.start_capital) / std::sqrt(vol);
+  //     subvol += cache.buy_values[j] * cov_vec[asset2];
+  //   }
+  //   vol -= cache.buy_values[i] * subvol;
+  // }
+
+  // // Compute the sharpe
+  // return (cache.end_capital - cache.start_capital) / std::sqrt(vol);
 }
 
 bool check_compo_cache(const SharpeCache &cache) {
@@ -92,7 +112,7 @@ bool check_compo_cache(const SharpeCache &cache) {
 std::tuple<compo_t, sharpe_t>
 optimize_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
                           std::function<double(const compo_t)> get_sharpe) {
-  constexpr auto n_iter = 1'000u;
+  constexpr auto n_iter = 100u;
 
   std::random_device rd;
   std::mt19937 gen(rd());
@@ -103,6 +123,7 @@ optimize_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
 
   auto dshare = std::normal_distribution<double>(0, 1);
   auto dasset = std::uniform_int_distribution<unsigned>(0, compo.size() - 1);
+  auto best_compo = compo;
   for (auto _i = 0u; _i < n_iter; ++_i) {
     int dx;
     do {
@@ -120,24 +141,29 @@ optimize_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
     // Set best sharpe if better sharpe and still valid
     if (sharpe_opt > 0) {
       auto sharpe = get_sharpe(compo);
+      std::clog << sharpe << ' ' << best_sharpe << '\n';
       if (sharpe > best_sharpe) {
         best_sharpe = sharpe;
+        best_compo = compo;
       } else {
         // Undo action
         recompute_sharpe(cache, i, -dx, true);
+        compo = best_compo;
       }
     } else {
       // Undo action
       recompute_sharpe(cache, i, -dx, true);
+      compo = best_compo;
     }
   }
 
-  return std::make_tuple(compo, best_sharpe);
+  return std::make_tuple(best_compo, best_sharpe);
 }
 
 static void swap_low_capital_ratio(const TrucsInteressants &trucs,
                                    compo_t &compo, std::mt19937 &gen,
-                                   std::vector<bool> &assets_selected) {
+                                   std::vector<bool> &assets_selected,
+                                   bool swap_all = false) {
   // Build vector of selected assets
   assets_selected.resize(trucs.assets_capital.size());
   std::fill(assets_selected.begin(), assets_selected.end(), false);
@@ -161,14 +187,14 @@ static void swap_low_capital_ratio(const TrucsInteressants &trucs,
   // Swap those with low capital ratios
   for (auto &[shares, i_asset] : compo) {
     auto capital = ((double)shares * trucs.start_values[i_asset]);
-    if (capital >= cap_limit)
+    if (!swap_all && capital >= cap_limit)
       continue;
 
     // Select random new asset
-    unsigned new_asset;
-    do {
-      new_asset = asset_gen(gen);
-    } while (assets_selected[new_asset]);
+    unsigned new_asset = asset_gen(gen);
+    while (assets_selected[new_asset]) {
+      new_asset = (new_asset + 1) % assets_selected.size();
+    }
 
     // Swap
     assets_selected[i_asset] = false;
@@ -199,6 +225,11 @@ find_best_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
   std::mt19937 gen(rd());
   auto assets_selected = std::vector<bool>();
 
+  constexpr auto WANTED_PORTFOLIO_SIZE = 21;
+  compo.resize(WANTED_PORTFOLIO_SIZE);
+
+  swap_low_capital_ratio(trucs, compo, gen, assets_selected, true);
+
   // Reset shares to respect the rules
   // Find the asset with the min capital
   double min_cap = INFINITY;
@@ -226,6 +257,7 @@ find_best_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
     auto new_sharpe = get_sharpe(new_compo);
     if (new_sharpe > best_sharpe) {
       std::clog << "New best compute sharpe: " << new_sharpe << '\n';
+      check_compo(trucs, best_compo, true);
       best_compo = new_compo;
       best_sharpe = new_sharpe;
     }
