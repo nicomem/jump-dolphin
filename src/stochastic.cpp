@@ -39,7 +39,8 @@ sharpe_t compute_sharpe_init_chache(const TrucsInteressants &trucs,
   }
 
   // Compute the sharpe
-  return (cache.end_capital - cache.start_capital) / std::sqrt(vol);
+  return 100'000 * (cache.end_capital - cache.start_capital) /
+         (cache.start_capital * std::sqrt(vol));
 }
 
 sharpe_t recompute_sharpe(SharpeCache &cache, unsigned i_compo_changed,
@@ -73,7 +74,8 @@ sharpe_t recompute_sharpe(SharpeCache &cache, unsigned i_compo_changed,
   }
 
   // Compute the sharpe
-  return (cache.end_capital - cache.start_capital) / std::sqrt(vol);
+  return 100'000 * (cache.end_capital - cache.start_capital) /
+         (cache.start_capital * std::sqrt(vol));
 }
 
 bool check_compo_cache(const SharpeCache &cache) {
@@ -135,19 +137,25 @@ static void swap_low_capital_ratio(const TrucsInteressants &trucs,
   std::fill(assets_selected.begin(), assets_selected.end(), false);
 
   auto start_capital = 0;
+  double min_capital = INFINITY;
+  double max_capital = -INFINITY;
   for (const auto &[shares, i_asset] : compo) {
     assets_selected[i_asset] = true;
-    start_capital += (double)shares * trucs.start_values[i_asset];
+    auto capital = (double)shares * trucs.start_values[i_asset];
+    start_capital += capital;
+
+    min_capital = std::min(min_capital, capital);
+    max_capital = std::max(max_capital, capital);
   }
 
+  auto cap_limit =
+      std::uniform_real_distribution(min_capital, max_capital)(gen);
   auto asset_gen = std::uniform_int_distribution<unsigned>(0, compo.size() - 1);
 
   // Swap those with low capital ratios
-  constexpr auto min_ratio = 0.015;
   for (auto &[shares, i_asset] : compo) {
-    auto true_ratio =
-        ((double)shares * trucs.start_values[i_asset]) / start_capital;
-    if (true_ratio >= min_ratio)
+    auto capital = ((double)shares * trucs.start_values[i_asset]);
+    if (capital >= cap_limit)
       continue;
 
     // Select random new asset
@@ -178,7 +186,7 @@ static void swap_low_capital_ratio(const TrucsInteressants &trucs,
 
 compo_t find_best_compo_stochastic(const TrucsInteressants &trucs,
                                    compo_t compo) {
-  constexpr auto nb_iter = 10u;
+  constexpr auto nb_iter = 25u;
 
   std::random_device rd;
   std::mt19937 gen(rd());
@@ -192,7 +200,6 @@ compo_t find_best_compo_stochastic(const TrucsInteressants &trucs,
     swap_low_capital_ratio(trucs, compo, gen, assets_selected);
 
     auto [new_compo, new_sharpe] = optimize_compo_stochastic(trucs, compo);
-    std::cout << new_sharpe << "\n";
     if (new_sharpe > best_sharpe) {
       std::clog << "New best compute sharpe: " << new_sharpe << '\n';
       best_compo = new_compo;
