@@ -157,10 +157,6 @@ void PrivateJumpClient::put_portfolio_compo(RequiredParameter id,
   // Send the PUT request
   auto r = session_.Put();
 
-  std::clog << "Put portfolio:\n";
-  std::clog << r.status_code << ':' << r.status_line << '\n';
-  std::clog << r.text << '\n';
-
   // Remove the body from the session
   session_.SetBody({});
 }

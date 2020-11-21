@@ -273,7 +273,24 @@ static void optimize_portfolio(const TrucsInteressants &trucs,
   auto old_sharpe = FinalPortfolio::get_sharpe(client);
 
   std::cout << "---\n";
-  auto new_compo = find_best_compo_stochastic(trucs, compo);
+  auto get_sharpe = [&trucs, &client](const compo_t &compo) -> double {
+    auto portfolio = FinalPortfolio::to_portfolio(trucs, compo);
+    auto p = portfolio;
+    client.put_portfolio_compo(std::string("1825"), std::move(p));
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+    p = portfolio;
+    client.put_portfolio_compo(std::string("1825"), std::move(p));
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+    auto sharpe_str = FinalPortfolio::get_sharpe(client);
+    std::cout << sharpe_str << '\n';
+    std::replace(sharpe_str.begin(), sharpe_str.end(), ',', '.');
+    return std::stod(sharpe_str);
+  };
+  auto new_compo = find_best_compo_stochastic(trucs, compo, get_sharpe);
 
   if (!check_compo(trucs, new_compo, true)) {
     std::cerr << "Optimized compo is not valid\n";

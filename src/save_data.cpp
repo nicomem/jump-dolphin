@@ -288,7 +288,7 @@ IMPL_GETTER5(SaveData::DaysAssetAndVolumes, filtered_assets_and_volumes) {
     std::replace(sharpe_str.begin(), sharpe_str.end(), ',', '.');
     auto sharpe = std::stod(sharpe_str);
 
-    if (sharpe >= 0.5) {
+    if (sharpe >= 0.8) {
       stock_index[j] = stock_index[i];
       volumes[j] = volumes[i];
       ++j;
