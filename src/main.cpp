@@ -75,10 +75,10 @@ JumpTypes::Portfolio to_portfolio(const TrucsInteressants &trucs,
   new_values.reserve(compo.size());
   for (const auto &[shares, i_asset] : compo) {
     double nb_shares = shares;
-    new_values.emplace_back(
+    new_values.push_back(JumpTypes::portfolio_value{
         JumpTypes::PortfolioAsset{std::stoi(trucs.assets_id[i_asset]),
                                   nb_shares},
-        std::nullopt);
+        std::nullopt});
   }
 
   return {std::string("EPITA_PTF_6"),
