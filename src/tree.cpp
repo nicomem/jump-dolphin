@@ -3,8 +3,7 @@
 #include <chrono>
 #include <iostream>
 
-static double portolio_capital(const TrucsInteressants &trucs,
-                               const compo_t &compo) {
+double portolio_capital(const TrucsInteressants &trucs, const compo_t &compo) {
   double r = 0;
   for (const auto &[nb_shares, i_asset] : compo) {
     r += nb_shares * trucs.start_values[i_asset];
@@ -12,39 +11,13 @@ static double portolio_capital(const TrucsInteressants &trucs,
   return r;
 }
 
-/** Try to create the best portfolio from a combination of assets */
-static sharpe_t fill_compo(const TrucsInteressants &trucs, compo_t &compo,
-                           finmath::asset_period_values_t &shares_capital) {
-  // Find the asset with the min capital
-  double min_cap = INFINITY;
-  for (const auto &[_nb_shares, i_asset] : compo) {
-    // std::cerr << trucs.assets_capital[i_asset] << '\n';
-    min_cap = std::min(min_cap, trucs.assets_capital[i_asset]);
-  }
-
-  // Fill the portfolio
-  auto max_cap = (max_share_percent / min_share_percent) * min_cap;
-  for (auto &[nb_shares, i_asset] : compo) {
-    nb_shares = max_cap / trucs.start_values[i_asset];
-  }
-
+sharpe_t compute_sharpe(const TrucsInteressants &trucs, const compo_t &compo,
+                        finmath::asset_period_values_t &shares_capital) {
   shares_capital.resize(0);
-
-  // Verify the portfolio
   auto compo_cap = portolio_capital(trucs, compo);
   for (const auto &[nb_shares, i_asset] : compo) {
-    // Verify the portfolio conditions
     auto share_capital = nb_shares * trucs.start_values[i_asset];
     shares_capital.push_back(share_capital);
-
-    // Do not check the ratios here, tweak manually the best
-    // auto true_ratio = share_capital / compo_cap;
-    // if (true_ratio < min_share_percent)
-    //   return -INFINITY;
-
-    // // Should always be false, but just to be sure
-    // if (true_ratio > max_share_percent)
-    //   return -INFINITY;
   }
 
   double sell_value = 0;
@@ -73,6 +46,25 @@ static sharpe_t fill_compo(const TrucsInteressants &trucs, compo_t &compo,
 
   // Portfolio is valid, compute sharpe
   return (sell_value / compo_cap - 1) / (vol + 1e-8);
+}
+
+/** Try to create the best portfolio from a combination of assets */
+static sharpe_t fill_compo(const TrucsInteressants &trucs, compo_t &compo,
+                           finmath::asset_period_values_t &shares_capital) {
+  // Find the asset with the min capital
+  double min_cap = INFINITY;
+  for (const auto &[_nb_shares, i_asset] : compo) {
+    // std::cerr << trucs.assets_capital[i_asset] << '\n';
+    min_cap = std::min(min_cap, trucs.assets_capital[i_asset]);
+  }
+
+  // Fill the portfolio
+  auto max_cap = (max_share_percent / min_share_percent) * min_cap;
+  for (auto &[nb_shares, i_asset] : compo) {
+    nb_shares = max_cap / trucs.start_values[i_asset];
+  }
+
+  return compute_sharpe(trucs, compo, shares_capital);
 }
 
 /** Permute the composition

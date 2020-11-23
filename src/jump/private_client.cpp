@@ -151,10 +151,11 @@ void PrivateJumpClient::put_portfolio_compo(RequiredParameter id,
 
   // Build and set the body
   json j_body = portfolio;
-  session_.SetBody({j_body});
+  cpr::Body body = cpr::Body(std::move(j_body.dump()));
+  session_.SetBody(body);
 
   // Send the PUT request
-  session_.Put();
+  auto r = session_.Put();
 
   // Remove the body from the session
   session_.SetBody({});

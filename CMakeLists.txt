@@ -5,30 +5,29 @@ include(FetchContent)
 
 # External dependencies
 FetchContent_Declare(CLI11
-    GIT_REPOSITORY https://github.com/CLIUtils/CLI11
+    GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
     GIT_TAG v1.9.1
     GIT_SHALLOW true
 )
 FetchContent_Declare(nlohmann_json
-    GIT_REPOSITORY https://github.com/ArthurSonzogni/nlohmann_json_cmake_fetchcontent
+    GIT_REPOSITORY https://github.com/ArthurSonzogni/nlohmann_json_cmake_fetchcontent.git
     GIT_TAG v3.9.1
     GIT_SHALLOW true
 )
 FetchContent_Declare(cpr
-    GIT_REPOSITORY https://github.com/whoshuu/cpr
+    GIT_REPOSITORY https://github.com/whoshuu/cpr.git
     # Hash for the 2020-11-16 master
     # 1.5.2 requires curl PROTOCOLS but master does not
     # -> could not use system curl lib before (in most cases)
     GIT_TAG 881618a097d3359d752d17d7eff9f7377624e1fe
-    GIT_SHALLOW true
 )
 FetchContent_Declare(fmt
-    GIT_REPOSITORY https://github.com/fmtlib/fmt
+    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
     GIT_TAG 7.1.1
     GIT_SHALLOW true
 )
 FetchContent_Declare(date
-    GIT_REPOSITORY https://github.com/HowardHinnant/date
+    GIT_REPOSITORY https://github.com/HowardHinnant/date.git
     GIT_TAG v3.0.0
     GIT_SHALLOW true
 )
@@ -66,10 +65,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Wextra -Wpedantic")
 set(SOURCES
     main.cpp
 
+    check.cpp
+    check.hpp
     finmath.cpp
     finmath.hpp
     save_data.cpp
     save_data.hpp
+    stochastic.cpp
+    stochastic.hpp
     tree.cpp
     tree.hpp
 
