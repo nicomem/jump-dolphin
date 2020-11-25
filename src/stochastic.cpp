@@ -143,6 +143,69 @@ optimize_compo_stochastic(const TrucsInteressants &trucs, compo_t compo) {
   return std::make_tuple(best_compo, best_sharpe);
 }
 
+std::tuple<compo_t, sharpe_t>
+optimize_compo_2(const TrucsInteressants &trucs, compo_t compo,
+                 std::function<double(const compo_t &)> get_sharpe) {
+  auto best_sharpe = get_sharpe(compo);
+
+  auto go_one_way = [&compo, &trucs, &get_sharpe, &best_sharpe](
+                        auto i, auto step, auto &found_better) -> bool {
+    auto &[shares, i_asset] = compo[i];
+    shares += step;
+
+    auto out_of_bounds = shares < 1 || shares >= trucs.nb_shares[i_asset];
+    if (out_of_bounds || !check_compo(trucs, compo, false)) {
+      shares -= step;
+      return false;
+    }
+
+    auto sharpe = get_sharpe(compo);
+    if (sharpe > best_sharpe) {
+      best_sharpe = sharpe;
+      found_better = true;
+      return true;
+    } else {
+      shares -= step;
+      return false;
+    }
+  };
+
+  // Optimize with a big step
+  constexpr int step1 = 10;
+  bool found_better;
+  do {
+    found_better = false;
+
+    for (auto i = 0u; i < compo.size(); ++i) {
+      // Test one way
+      while (go_one_way(i, step1, found_better)) {
+      }
+
+      // Test the other way
+      while (go_one_way(i, -step1, found_better)) {
+      }
+    }
+  } while (found_better);
+
+  // Optimize with a smaller step
+  // constexpr int step2 = 1;
+  // do {
+  //   found_better = false;
+
+  //   for (auto i = 0u; i < compo.size(); ++i) {
+  //     // Test one way
+  //     while (go_one_way(i, step2, found_better)) {
+  //     }
+
+  //     // Test the other way
+  //     while (go_one_way(i, -step2, found_better)) {
+  //     }
+  //   }
+  // } while (found_better);
+
+  return std::make_tuple(compo, best_sharpe);
+}
+
 static void swap_low_capital_ratio(const TrucsInteressants &trucs,
                                    compo_t &compo, std::mt19937 &gen,
                                    std::vector<bool> &assets_selected,
@@ -226,17 +289,24 @@ find_best_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
     nb_shares = max_cap / trucs.start_values[i_asset];
   }
 
-  auto [best_compo, _sharpe] = optimize_compo_stochastic(trucs, compo);
-  auto best_sharpe = get_sharpe(best_compo);
+  // auto [best_compo, _sharpe] = optimize_compo_stochastic(trucs, compo);
+  // auto best_sharpe = get_sharpe(best_compo);
+
+  auto [best_compo, best_sharpe] = optimize_compo_2(trucs, compo, get_sharpe);
+
   std::clog << "Start compute sharpe: " << best_sharpe << '\n';
   for (auto _i = 0u; _i < nb_iter; ++_i) {
     // Swap those with low capital ratios with random ones
     compo = best_compo;
     swap_low_capital_ratio(trucs, compo, gen, assets_selected);
 
-    auto [new_compo, _sharpe] = optimize_compo_stochastic(trucs, compo);
-    auto new_sharpe = get_sharpe(new_compo);
+    // auto [new_compo, _sharpe] = optimize_compo_stochastic(trucs, compo);
+    // auto new_sharpe = get_sharpe(new_compo);
+
+    auto [new_compo, new_sharpe] = optimize_compo_2(trucs, compo, get_sharpe);
+
     std::clog << new_sharpe << ' ' << best_sharpe << '\n';
+    check_compo(trucs, best_compo, true);
     if (new_sharpe > best_sharpe) {
       std::clog << "New best compute sharpe: " << new_sharpe << '\n';
       check_compo(trucs, best_compo, true);
