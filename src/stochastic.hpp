@@ -34,8 +34,7 @@ bool check_compo_cache(const SharpeCache &cache);
  * composition will also respect it.
  */
 std::tuple<compo_t, sharpe_t>
-optimize_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
-                          std::function<double(const compo_t &)> get_sharpe);
+optimize_compo_stochastic(const TrucsInteressants &trucs, compo_t compo);
 
 /** Try to find the best composition by using the stochastic optimizer */
 compo_t
