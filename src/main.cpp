@@ -278,6 +278,9 @@ static void optimize_portfolio(const TrucsInteressants &trucs,
     auto p = portfolio;
     client.put_portfolio_compo(std::string("1825"), std::move(p));
 
+    p = portfolio;
+    client.put_portfolio_compo(std::string("1825"), std::move(p));
+
     auto sharpe_str = FinalPortfolio::get_sharpe(client);
     std::replace(sharpe_str.begin(), sharpe_str.end(), ',', '.');
     return std::stod(sharpe_str);

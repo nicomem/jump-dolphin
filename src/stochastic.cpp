@@ -4,6 +4,24 @@
 #include <iostream>
 #include <random>
 
+static double comp_vol(const SharpeCache &cache) {
+  double vol = 0;
+  for (auto i = 0u; i < cache.compo.size(); ++i) {
+    auto asset1 = std::get<1>(cache.compo[i]);
+    const auto &cov_vec = cache.trucs.cov_matrix[asset1];
+
+    double subvol = cache.buy_values[i] * cov_vec[asset1];
+    for (auto j = i + 1; j < cache.compo.size(); ++j) {
+      auto asset2 = std::get<1>(cache.compo[j]);
+
+      subvol += 2 * cache.buy_values[j] * cov_vec[asset2];
+    }
+    vol -= (cache.buy_values[i] / cache.start_capital) * subvol;
+  }
+
+  return vol / cache.start_capital;
+}
+
 sharpe_t compute_sharpe_init_chache(const TrucsInteressants &trucs,
                                     const compo_t &compo, SharpeCache &cache) {
   // Initialize the vectors
@@ -24,22 +42,10 @@ sharpe_t compute_sharpe_init_chache(const TrucsInteressants &trucs,
     cache.end_capital += (double)nb_shares * trucs.end_values[i_asset];
   }
 
-  double vol = 0;
-  for (auto i = 0u; i < compo_size; ++i) {
-    auto asset1 = std::get<1>(compo[i]);
-    const auto &cov_vec = trucs.cov_matrix[asset1];
-
-    double subvol = 0;
-    for (auto j = 0u; j < compo_size; ++j) {
-      auto asset2 = std::get<1>(compo[j]);
-
-      subvol += cache.buy_values[j] * cov_vec[asset2];
-    }
-    vol += cache.buy_values[i] * subvol;
-  }
+  double vol = comp_vol(cache);
 
   // Compute the sharpe
-  return (cache.end_capital - cache.start_capital) / std::sqrt(vol);
+  return (cache.end_capital / cache.start_capital) / vol;
 }
 
 sharpe_t recompute_sharpe(SharpeCache &cache, unsigned i_compo_changed,
@@ -65,35 +71,20 @@ sharpe_t recompute_sharpe(SharpeCache &cache, unsigned i_compo_changed,
     cache.end_capital += (double)nb_shares * cache.trucs.end_values[i_asset];
   }
 
-  // // Update start & end capital
-  // auto dbuy_value = (double)dshares * cache.trucs.start_values[i_asset];
-  // cache.buy_values[i_compo_changed] += dbuy_value;
-  // cache.start_capital += dbuy_value;
+  // Update start & end capital
+  auto dbuy_value = (double)dshares * cache.trucs.start_values[i_asset];
+  cache.buy_values[i_compo_changed] += dbuy_value;
+  cache.start_capital += dbuy_value;
 
-  // cache.end_capital += dshares * cache.trucs.end_values[i_asset];
+  cache.end_capital += dshares * cache.trucs.end_values[i_asset];
 
   if (only_update_cache || !check_compo_cache(cache))
     return -INFINITY;
 
-  return 42;
+  double vol = comp_vol(cache);
 
-  // auto compo_size = cache.compo.size();
-  // double vol = 0;
-  // for (auto i = 0u; i < compo_size; ++i) {
-  //   auto asset1 = std::get<1>(cache.compo[i]);
-  //   const auto &cov_vec = cache.trucs.cov_matrix[asset1];
-
-  //   double subvol = 0;
-  //   for (auto j = 0u; j < compo_size; ++j) {
-  //     auto asset2 = std::get<1>(cache.compo[j]);
-
-  //     subvol += cache.buy_values[j] * cov_vec[asset2];
-  //   }
-  //   vol -= cache.buy_values[i] * subvol;
-  // }
-
-  // // Compute the sharpe
-  // return (cache.end_capital - cache.start_capital) / std::sqrt(vol);
+  // Compute the sharpe
+  return (cache.end_capital / cache.start_capital) / vol;
 }
 
 bool check_compo_cache(const SharpeCache &cache) {
@@ -111,15 +102,15 @@ bool check_compo_cache(const SharpeCache &cache) {
 
 std::tuple<compo_t, sharpe_t>
 optimize_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
-                          std::function<double(const compo_t)> get_sharpe) {
-  constexpr auto n_iter = 100u;
+                          std::function<double(const compo_t &)> get_sharpe) {
+  constexpr auto n_iter = 1000u;
 
   std::random_device rd;
   std::mt19937 gen(rd());
 
   auto cache = SharpeCache(trucs, compo);
   auto best_sharpe = compute_sharpe_init_chache(trucs, compo, cache);
-  best_sharpe = get_sharpe(compo);
+  // best_sharpe = get_sharpe(compo);
 
   auto dshare = std::normal_distribution<double>(0, 1);
   auto dasset = std::uniform_int_distribution<unsigned>(0, compo.size() - 1);
@@ -139,17 +130,9 @@ optimize_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
 
     auto sharpe_opt = recompute_sharpe(cache, i, dx, false);
     // Set best sharpe if better sharpe and still valid
-    if (sharpe_opt > 0) {
-      auto sharpe = get_sharpe(compo);
-      std::clog << sharpe << ' ' << best_sharpe << '\n';
-      if (sharpe > best_sharpe) {
-        best_sharpe = sharpe;
-        best_compo = compo;
-      } else {
-        // Undo action
-        recompute_sharpe(cache, i, -dx, true);
-        compo = best_compo;
-      }
+    if (sharpe_opt > 0 && sharpe_opt > best_sharpe) {
+      best_sharpe = sharpe_opt;
+      best_compo = compo;
     } else {
       // Undo action
       recompute_sharpe(cache, i, -dx, true);
@@ -180,14 +163,14 @@ static void swap_low_capital_ratio(const TrucsInteressants &trucs,
     max_capital = std::max(max_capital, capital);
   }
 
-  auto cap_limit = std::normal_distribution<double>(0, 1)(gen) *
-                   (max_capital - min_capital) / 2;
+  auto cap_limit =
+      std::uniform_real_distribution<double>(min_capital, max_capital)(gen);
   auto asset_gen = std::uniform_int_distribution<unsigned>(0, compo.size() - 1);
 
   // Swap those with low capital ratios
   for (auto &[shares, i_asset] : compo) {
     auto capital = ((double)shares * trucs.start_values[i_asset]);
-    if (!swap_all && capital >= cap_limit)
+    if (!swap_all && capital > cap_limit)
       continue;
 
     // Select random new asset
@@ -218,8 +201,8 @@ static void swap_low_capital_ratio(const TrucsInteressants &trucs,
 
 compo_t
 find_best_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
-                           std::function<double(const compo_t)> get_sharpe) {
-  constexpr auto nb_iter = 25u;
+                           std::function<double(const compo_t &)> get_sharpe) {
+  constexpr auto nb_iter = 100u;
 
   std::random_device rd;
   std::mt19937 gen(rd());
@@ -255,6 +238,7 @@ find_best_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
     auto [new_compo, _sharpe] =
         optimize_compo_stochastic(trucs, compo, get_sharpe);
     auto new_sharpe = get_sharpe(new_compo);
+    std::clog << new_sharpe << ' ' << best_sharpe << '\n';
     if (new_sharpe > best_sharpe) {
       std::clog << "New best compute sharpe: " << new_sharpe << '\n';
       check_compo(trucs, best_compo, true);
