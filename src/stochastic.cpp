@@ -16,7 +16,7 @@ static double comp_vol(const SharpeCache &cache) {
 
       subvol += 2 * cache.buy_values[j] * cov_vec[asset2];
     }
-    vol -= (cache.buy_values[i] / cache.start_capital) * subvol;
+    vol += (cache.buy_values[i] / cache.start_capital) * subvol;
   }
 
   return vol / cache.start_capital;
@@ -129,6 +129,7 @@ optimize_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
     dx = std::min<int>(dx, trucs.nb_shares[i_asset] - shares);
 
     auto sharpe_opt = recompute_sharpe(cache, i, dx, false);
+    // std::cout << sharpe_opt << " --- " << best_sharpe << '\n';
     // Set best sharpe if better sharpe and still valid
     if (sharpe_opt > 0 && sharpe_opt > best_sharpe) {
       best_sharpe = sharpe_opt;
@@ -208,7 +209,7 @@ find_best_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
   std::mt19937 gen(rd());
   auto assets_selected = std::vector<bool>();
 
-  constexpr auto WANTED_PORTFOLIO_SIZE = 21;
+  constexpr auto WANTED_PORTFOLIO_SIZE = 15;
   compo.resize(WANTED_PORTFOLIO_SIZE);
 
   swap_low_capital_ratio(trucs, compo, gen, assets_selected, true);
