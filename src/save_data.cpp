@@ -217,6 +217,7 @@ IMPL_GETTER5(SaveData::DaysAssetAndVolumes, filtered_assets_and_volumes) {
   const auto &last_day_assets = (*days_assets)["2020-09-30"];
   auto stock_index = std::vector<unsigned>();
   auto volumes = std::vector<finmath::nb_shares_t>();
+  // auto assets_type = std::vector<CompactTypes::AssetType>();
 
   // Filter the assets to keep
   for (unsigned i = 0; i < first_day_assets.size(); ++i) {
