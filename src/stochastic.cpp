@@ -118,7 +118,7 @@ optimize_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
   for (auto _i = 0u; _i < n_iter; ++_i) {
     int dx;
     do {
-      dx = 25 * dshare(gen);
+      dx = 50 * dshare(gen);
     } while (dx == 0);
 
     share_index_t i = dasset(gen);
@@ -203,13 +203,13 @@ static void swap_low_capital_ratio(const TrucsInteressants &trucs,
 compo_t
 find_best_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
                            std::function<double(const compo_t &)> get_sharpe) {
-  constexpr auto nb_iter = 100u;
+  constexpr auto nb_iter = 1000u;
 
   std::random_device rd;
   std::mt19937 gen(rd());
   auto assets_selected = std::vector<bool>();
 
-  constexpr auto WANTED_PORTFOLIO_SIZE = 15;
+  constexpr auto WANTED_PORTFOLIO_SIZE = 16;
   compo.resize(WANTED_PORTFOLIO_SIZE);
 
   swap_low_capital_ratio(trucs, compo, gen, assets_selected, true);
