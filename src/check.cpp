@@ -16,8 +16,17 @@ bool check_compo(const TrucsInteressants &trucs, const compo_t &compo,
 
     if (verbose) {
       std::cout << "- " << trucs.assets_id[i_asset] << " (" << std::setw(4)
-                << nb_shares << "): " << std::setprecision(3)
-                << 100 * true_ratio << "%";
+                << nb_shares << "): ";
+
+      // Print more precision if near the limits
+      if (std::abs(true_ratio - min_share_percent) < 0.0002 ||
+          std::abs(true_ratio - max_share_percent) < 0.0002) {
+        std::cout << std::setprecision(std::numeric_limits<double>::digits10 +
+                                       1)
+                  << 100 * true_ratio << "%";
+      } else {
+        std::cout << std::setprecision(3) << 100 * true_ratio << "%";
+      }
     }
 
     if (true_ratio < min_share_percent || true_ratio > max_share_percent) {
