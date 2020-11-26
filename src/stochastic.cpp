@@ -234,6 +234,10 @@ optimize_compo_2(const TrucsInteressants &trucs, compo_t compo,
     }
   } while (found_better);
 
+  if (quick) {
+    return std::make_tuple(compo, best_sharpe);
+  }
+
   // Optimize with a big step
   constexpr int step1 = 10;
   do {
@@ -250,10 +254,6 @@ optimize_compo_2(const TrucsInteressants &trucs, compo_t compo,
       }
     }
   } while (found_better);
-
-  if (quick) {
-    return std::make_tuple(compo, best_sharpe);
-  }
 
   // Optimize with a smaller step
   constexpr int step2 = 1;
@@ -347,7 +347,7 @@ find_best_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
   std::mt19937 gen(rd());
   auto assets_selected = std::vector<bool>();
 
-  constexpr auto WANTED_PORTFOLIO_SIZE = 17;
+  constexpr auto WANTED_PORTFOLIO_SIZE = 22;
   compo.resize(WANTED_PORTFOLIO_SIZE);
 
   swap_low_capital_ratio(trucs, compo, gen, assets_selected, true);
@@ -365,8 +365,9 @@ find_best_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
     nb_shares = max_cap / trucs.start_values[i_asset];
   }
 
-  auto [best_compo, _sharpe] = optimize_compo_stochastic(trucs, compo);
-  auto best_sharpe = get_sharpe(best_compo);
+  auto [best_compo, best_sharpe] = optimize_compo_stochastic(trucs, compo);
+  std::tie(best_compo, best_sharpe) =
+      optimize_compo_2(trucs, best_compo, get_sharpe, true);
 
   std::clog << "Start compute sharpe: " << best_sharpe << '\n';
   while (!abort_process) {
@@ -374,8 +375,9 @@ find_best_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
     compo = best_compo;
     swap_low_capital_ratio(trucs, compo, gen, assets_selected);
 
-    auto [new_compo, _sharpe] = optimize_compo_stochastic(trucs, compo);
-    auto new_sharpe = get_sharpe(new_compo);
+    auto [new_compo, new_sharpe] = optimize_compo_stochastic(trucs, compo);
+    std::tie(new_compo, new_sharpe) =
+        optimize_compo_2(trucs, new_compo, get_sharpe, true);
 
     std::clog << new_sharpe << ' ' << best_sharpe << '\n';
     if (new_sharpe > best_sharpe) {
