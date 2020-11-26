@@ -214,63 +214,48 @@ optimize_compo_2(const TrucsInteressants &trucs, compo_t compo,
     }
   };
 
-  constexpr double step0 = 0.1;
-  bool found_better;
-  do {
-    std::cout << "Best sharpe (step_ratio=" << step0 << "): " << best_sharpe
-              << '\n';
-    found_better = false;
+  auto opti_step = [&best_sharpe, &compo,
+                    &go_one_way](std::string_view name,
+                                 std::function<unsigned(unsigned)> get_step) {
+    bool found_better;
+    do {
+      found_better = false;
+      std::cout << "Best sharpe (" << name << "): " << best_sharpe << '\n';
 
-    for (auto i = 0u; i < compo.size(); ++i) {
-      auto &[nb_shares, i_asset] = compo[i];
-      unsigned step = std::ceil(step0 * nb_shares);
-      // Test one way
-      while (go_one_way(i, step, found_better)) {
-      }
+      for (auto i = 0u; i < compo.size(); ++i) {
+        auto step = get_step(i);
 
-      // Test the other way
-      while (go_one_way(i, -step, found_better)) {
+        bool found_better1 = false;
+        // Test one way
+        while (go_one_way(i, step, found_better1)) {
+        }
+
+        if (!found_better) {
+          // Test the other way
+          while (go_one_way(i, -step, found_better1)) {
+          }
+        }
+
+        found_better |= found_better1;
       }
-    }
-  } while (found_better);
+    } while (found_better);
+  };
+
+  // Optimize with a big dynamic step
+  opti_step("ratio=0.1", [&compo](auto i) -> unsigned {
+    auto &[nb_shares, i_asset] = compo[i];
+    return std::max<double>(1, 0.1 * (double)nb_shares);
+  });
 
   if (quick) {
     return std::make_tuple(compo, best_sharpe);
   }
 
-  // Optimize with a big step
-  constexpr int step1 = 10;
-  do {
-    std::cout << "Best sharpe (step=" << step1 << "): " << best_sharpe << '\n';
-    found_better = false;
+  // Optimize with a big fixed step
+  opti_step("step=10", [](auto) -> unsigned { return 10; });
 
-    for (auto i = 0u; i < compo.size(); ++i) {
-      // Test one way
-      while (go_one_way(i, step1, found_better)) {
-      }
-
-      // Test the other way
-      while (go_one_way(i, -step1, found_better)) {
-      }
-    }
-  } while (found_better);
-
-  // Optimize with a smaller step
-  constexpr int step2 = 1;
-  do {
-    std::cout << "Best sharpe (step=" << step2 << "): " << best_sharpe << '\n';
-    found_better = false;
-
-    for (auto i = 0u; i < compo.size(); ++i) {
-      // Test one way
-      while (go_one_way(i, step2, found_better)) {
-      }
-
-      // Test the other way
-      while (go_one_way(i, -step2, found_better)) {
-      }
-    }
-  } while (found_better);
+  // Optimize with a small fixed step
+  opti_step("step=1", [](auto) -> unsigned { return 1; });
 
   return std::make_tuple(compo, best_sharpe);
 }
@@ -347,7 +332,9 @@ find_best_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
   std::mt19937 gen(rd());
   auto assets_selected = std::vector<bool>();
 
-  constexpr auto WANTED_PORTFOLIO_SIZE = 22;
+  auto WANTED_PORTFOLIO_SIZE = 21u;
+  WANTED_PORTFOLIO_SIZE =
+      std::min<unsigned>(trucs.assets_id.size() - 1, WANTED_PORTFOLIO_SIZE);
   compo.resize(WANTED_PORTFOLIO_SIZE);
 
   swap_low_capital_ratio(trucs, compo, gen, assets_selected, true);
