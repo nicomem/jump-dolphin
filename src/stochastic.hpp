@@ -45,3 +45,7 @@ optimize_compo_2(const TrucsInteressants &trucs, compo_t compo, sharpe_t sharpe,
 compo_t
 find_best_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
                            std::function<double(const compo_t &)> get_sharpe);
+
+std::tuple<compo_t, sharpe_t>
+optimize_compo_3(const TrucsInteressants &trucs, compo_t compo, sharpe_t sharpe,
+                 std::function<double(const compo_t &)> get_sharpe);

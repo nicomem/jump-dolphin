@@ -386,3 +386,61 @@ find_best_compo_stochastic(const TrucsInteressants &trucs, compo_t compo,
   std::clog << "Final compute sharpe: " << best_sharpe << '\n';
   return best_compo;
 }
+
+std::tuple<compo_t, sharpe_t>
+optimize_compo_3(const TrucsInteressants &trucs, compo_t compo, sharpe_t sharpe,
+                 std::function<double(const compo_t &)> get_sharpe) {
+  bool found_better;
+  auto nb_assets = trucs.nb_shares.size();
+  auto assets_selected = std::vector<bool>(nb_assets);
+
+  auto best_compo = compo;
+  auto best_sharpe = sharpe;
+  do {
+    found_better = false;
+    for (auto i = 0u; i < compo.size(); ++i) {
+      for (auto j_asset = 0u; j_asset < nb_assets; ++j_asset) {
+        if (assets_selected[j_asset])
+          continue;
+
+        auto &[nb_shares, i_asset] = compo[i];
+
+        // Swap
+        assets_selected[i_asset] = false;
+        assets_selected[j_asset] = true;
+        i_asset = j_asset;
+
+        // Reset shares to respect the rules
+        // Find the asset with the min capital
+        double min_cap = INFINITY;
+        for (const auto &[_nb_shares, i_asset] : compo) {
+          min_cap = std::min(min_cap, trucs.assets_capital[i_asset]);
+        }
+
+        // Fill the portfolio
+        auto max_cap = (max_share_percent / min_share_percent) * min_cap;
+        for (auto &[nb_shares, i_asset] : compo) {
+          nb_shares = max_cap / trucs.start_values[i_asset];
+        }
+
+        // Optimize and get sharpe
+        auto sharpe = get_sharpe(compo);
+        auto [new_compo, new_sharpe] =
+            optimize_compo_2(trucs, compo, sharpe, get_sharpe, false);
+
+        // Update if better
+        if (new_sharpe > best_sharpe) {
+          std::cout << "Found better compo with sharpe: " << new_sharpe << '\n';
+          check_compo(trucs, new_compo, true);
+          best_sharpe = new_sharpe;
+          best_compo = new_compo;
+          found_better = true;
+        } else {
+          compo = best_compo;
+        }
+      }
+    }
+  } while (found_better);
+
+  return std::make_tuple(best_compo, best_sharpe);
+}
