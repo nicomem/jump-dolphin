@@ -39,7 +39,7 @@ optimize_compo_stochastic(const TrucsInteressants &trucs, compo_t compo);
 std::tuple<compo_t, sharpe_t>
 optimize_compo_2(const TrucsInteressants &trucs, compo_t compo, sharpe_t sharpe,
                  std::function<double(const compo_t &)> get_sharpe,
-                 bool quick = false);
+                 bool quick = false, bool verbose = true);
 
 /** Try to find the best composition by using the stochastic optimizer */
 compo_t

@@ -194,8 +194,8 @@ optimize_compo_stochastic(const TrucsInteressants &trucs, compo_t compo) {
 
 std::tuple<compo_t, sharpe_t>
 optimize_compo_2(const TrucsInteressants &trucs, compo_t compo, sharpe_t sharpe,
-                 std::function<double(const compo_t &)> get_sharpe,
-                 bool quick) {
+                 std::function<double(const compo_t &)> get_sharpe, bool quick,
+                 bool verbose) {
   auto best_sharpe = sharpe;
 
   auto go_one_way = [&compo, &trucs, &get_sharpe, &best_sharpe](
@@ -220,13 +220,15 @@ optimize_compo_2(const TrucsInteressants &trucs, compo_t compo, sharpe_t sharpe,
     }
   };
 
-  auto opti_step = [&best_sharpe, &compo,
-                    &go_one_way](std::string_view name,
-                                 std::function<unsigned(unsigned)> get_step) {
+  auto opti_step = [&best_sharpe, &compo, &go_one_way,
+                    verbose](std::string_view name,
+                             std::function<unsigned(unsigned)> get_step) {
     bool found_better;
     do {
       found_better = false;
-      std::cout << "Best sharpe (" << name << "): " << best_sharpe << '\n';
+      if (verbose) {
+        std::cout << "Best sharpe (" << name << "): " << best_sharpe << '\n';
+      }
 
       for (auto i = 0u; i < compo.size(); ++i) {
         auto step = get_step(i);
@@ -393,15 +395,22 @@ optimize_compo_3(const TrucsInteressants &trucs, compo_t compo, sharpe_t sharpe,
   bool found_better;
   auto nb_assets = trucs.nb_shares.size();
   auto assets_selected = std::vector<bool>(nb_assets);
+  for (auto &[_, i_asset] : compo) {
+    assets_selected[i_asset] = true;
+  }
 
   auto best_compo = compo;
   auto best_sharpe = sharpe;
+  std::cout << "Starting sharpe: " << best_sharpe << '\n';
   do {
     found_better = false;
     for (auto i = 0u; i < compo.size(); ++i) {
+      std::clog << "Optimizing compo[" << i << "]\n";
       for (auto j_asset = 0u; j_asset < nb_assets; ++j_asset) {
         if (assets_selected[j_asset])
           continue;
+
+        std::clog << "Checking asset " << j_asset << "\n";
 
         auto &[nb_shares, i_asset] = compo[i];
 
@@ -426,7 +435,7 @@ optimize_compo_3(const TrucsInteressants &trucs, compo_t compo, sharpe_t sharpe,
         // Optimize and get sharpe
         auto sharpe = get_sharpe(compo);
         auto [new_compo, new_sharpe] =
-            optimize_compo_2(trucs, compo, sharpe, get_sharpe, false);
+            optimize_compo_2(trucs, compo, sharpe, get_sharpe, false, false);
 
         // Update if better
         if (new_sharpe > best_sharpe) {

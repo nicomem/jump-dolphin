@@ -385,8 +385,7 @@ static void optimize_harder(const TrucsInteressants &trucs,
     return std::stod(sharpe_str);
   };
 
-  std::replace(old_sharpe.begin(), old_sharpe.end(), ',', '.');
-  auto current_sharpe = std::stod(old_sharpe);
+  auto current_sharpe = get_sharpe(compo);
   auto [new_compo, _sharpe] =
       optimize_compo_3(trucs, compo, current_sharpe, get_sharpe);
 
