@@ -314,6 +314,57 @@ static void optimize_portfolio(const TrucsInteressants &trucs,
   push_portfolio(client, best_portfolio);
 }
 
+static void optimize_hard(const TrucsInteressants &trucs, JumpClient &client) {
+  auto compo = FinalPortfolio::best_compo(trucs);
+
+  auto old_sharpe = FinalPortfolio::get_sharpe(client);
+
+  std::cout << "---\n";
+  auto get_sharpe = [&trucs, &client](const compo_t &compo) -> double {
+    auto portfolio = FinalPortfolio::to_portfolio(trucs, compo);
+    auto p = portfolio;
+    client.put_portfolio_compo(std::string("1825"), std::move(p));
+
+    p = portfolio;
+    client.put_portfolio_compo(std::string("1825"), std::move(p));
+
+    auto sharpe_str = FinalPortfolio::get_sharpe(client);
+    std::replace(sharpe_str.begin(), sharpe_str.end(), ',', '.');
+    return std::stod(sharpe_str);
+  };
+
+  std::replace(old_sharpe.begin(), old_sharpe.end(), ',', '.');
+  auto current_sharpe = std::stod(old_sharpe);
+  auto [new_compo, _sharpe] =
+      optimize_compo_2(trucs, compo, current_sharpe, get_sharpe);
+
+  if (!check_compo(trucs, new_compo, true)) {
+    std::cerr << "Optimized compo is not valid\n";
+    exit(EXIT_FAILURE);
+  }
+  std::cout << "---\n";
+
+  auto new_portfolio = FinalPortfolio::to_portfolio(trucs, new_compo);
+  auto best_portfolio =
+      FinalPortfolio::load_portfolio(FinalPortfolio::best_portfolio_path);
+
+  // Save the portfolio
+  FinalPortfolio::save_portfolio(FinalPortfolio::new_portfolio_path,
+                                 new_portfolio);
+
+  // Push the portfolio to compute the sharpe
+  push_portfolio(client, new_portfolio);
+
+  // Get the sharpes
+  auto new_sharpe = FinalPortfolio::get_sharpe(client);
+
+  std::cout << "Old portfolio JUMP Sharpe: " << old_sharpe << '\n';
+  std::cout << "Optimized portfolio JUMP Sharpe: " << new_sharpe << '\n';
+
+  // Re-push the old portfolio
+  push_portfolio(client, best_portfolio);
+}
+
 int main(int argc, char *argv[]) {
   std::string username, password, mode;
 
@@ -325,7 +376,8 @@ int main(int argc, char *argv[]) {
       ->required();
   app.add_option("-m,--mode", mode, "The action to do")
       ->required()
-      ->check(CLI::IsMember({"check", "push", "compute-brute", "optimize"}));
+      ->check(CLI::IsMember(
+          {"check", "push", "compute-brute", "optimize", "optimize-hard"}));
 
   CLI11_PARSE(app, argc, argv);
 
@@ -339,6 +391,8 @@ int main(int argc, char *argv[]) {
     check_portfolio(trucs);
   } else if (mode == "optimize") {
     optimize_portfolio(trucs, *client);
+  } else if (mode == "optimize-hard") {
+    optimize_hard(trucs, *client);
   } else if (mode == "push") {
     auto new_portfolio =
         FinalPortfolio::load_portfolio(FinalPortfolio::new_portfolio_path);
