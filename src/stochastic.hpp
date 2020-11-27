@@ -37,7 +37,7 @@ std::tuple<compo_t, sharpe_t>
 optimize_compo_stochastic(const TrucsInteressants &trucs, compo_t compo);
 
 std::tuple<compo_t, sharpe_t>
-optimize_compo_2(const TrucsInteressants &trucs, compo_t compo,
+optimize_compo_2(const TrucsInteressants &trucs, compo_t compo, sharpe_t sharpe,
                  std::function<double(const compo_t &)> get_sharpe,
                  bool quick = false);
 

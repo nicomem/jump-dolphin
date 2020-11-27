@@ -332,7 +332,11 @@ static void optimize_hard(const TrucsInteressants &trucs, JumpClient &client) {
     std::replace(sharpe_str.begin(), sharpe_str.end(), ',', '.');
     return std::stod(sharpe_str);
   };
-  auto [new_compo, _sharpe] = optimize_compo_2(trucs, compo, get_sharpe);
+
+  std::replace(old_sharpe.begin(), old_sharpe.end(), ',', '.');
+  auto current_sharpe = std::stod(old_sharpe);
+  auto [new_compo, _sharpe] =
+      optimize_compo_2(trucs, compo, current_sharpe, get_sharpe);
 
   if (!check_compo(trucs, new_compo, true)) {
     std::cerr << "Optimized compo is not valid\n";
